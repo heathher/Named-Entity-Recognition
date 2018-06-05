@@ -10,7 +10,7 @@ np.random.seed(SEED)
 random.seed(SEED)
 
 
-class Corpus:
+class Dataset:
 	def __init__(self, dataset):
 		if dataset is not None:
 			self.dataset = dataset

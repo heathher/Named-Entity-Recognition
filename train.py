@@ -1,6 +1,6 @@
 import sys
 from network import Network
-from corpus import Corpus
+from dataset import Dataset
 import json
 import os
 import layers
@@ -29,7 +29,7 @@ def main():
 			dataset_dict[data_type] = xy_list
 	for key in dataset_dict:
 		print('Number of samples (sentences) in {:<5}: {}'.format(key, len(dataset_dict[key])))
-	corp = Corpus(dataset_dict)
+	corp = Dataset(dataset_dict)
 	model_params = {"filter_width": 5,"n_filters": [128, 128,], "token_embeddings_dim": 100, "char_embeddings_dim": 25, "use_crf": True, "embeddings_dropout": True}
 	net = Network(corp, **model_params)
 	learning_params = {'epochs': 10, 'dropout_rate': 0.2, 'learning_rate': 0.0005, 'batch_size': 10, 'learning_rate_decay': 0.8}

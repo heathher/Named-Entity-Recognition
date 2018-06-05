@@ -120,7 +120,7 @@ class Network:
 			if batch_gen is None:
 				batch_generator = self.corpus.batch_generator(batch_size, dataset_type='train')
 			for x, y in batch_generator:
-				feed_dict = self._fill_feed_dict(x,y,learning_rate,dropout_rate=dropout_rate,training=True,
+				feed_dict = self.fill_feed_dict(x,y,learning_rate,dropout_rate=dropout_rate,training=True,
 												 learning_rate_decay=learning_rate_decay)
 				self._sess.run(self._train_op, feed_dict=feed_dict)
 			self.eval_conll('valid', print_results=True)
