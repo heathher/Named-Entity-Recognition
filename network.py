@@ -7,8 +7,8 @@ from evaluation import precision_recall_f1
 
 
 class Network:
-	def __init__(self, corpus, n_filters=(128, 256), filter_width=3, token_embeddings_dim=128, char_embeddings_dim=50,
-				use_char_embeddins=True, embeddings_dropout=False, use_crf=False, char_filter_width=5):
+	def __init__(self, corpus, n_filters=(128, 128), filter_width=3, token_embeddings_dim=100, char_embeddings_dim=30,
+				use_char_embeddins=True, embeddings_dropout=False, use_crf=False, char_filter_width=3):
 
 		tf.reset_default_graph()
 
@@ -61,7 +61,7 @@ class Network:
 		sess = tf.Session()
 
 		self._use_crf = use_crf
-		self.summary = tf.summary.merge_all()
+		#self.summary = tf.summary.merge_all()
 		self._learning_rate_decay_ph = learning_rate_decay_ph
 		self._x_w = x_word
 		self._x_c = x_char
@@ -83,7 +83,7 @@ class Network:
 		sess.run(tf.global_variables_initializer())
 		self._mask = mask
 
-	def get_train_op(self, loss, learning_rate, learnable_scopes=None, lr_decay_rate=None):
+	def get_train_op(self, loss, learning_rate, lr_decay_rate=None):
 		global_step = tf.Variable(0, trainable=False)
 		try:
 			n_training_samples = len(self.corpus.dataset['train'])
@@ -95,32 +95,18 @@ class Network:
 			learning_rate = tf.train.exponential_decay(learning_rate, global_step, decay_steps=decay_steps,
 													   decay_rate=lr_decay_rate, staircase=True)
 			self._learning_rate_decayed = learning_rate
-		variables = self.get_trainable_variables(learnable_scopes)
+		variables = tf.trainable_variables()
 		extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 		with tf.control_dependencies(extra_update_ops):
 			train_op = tf.train.AdamOptimizer(learning_rate).minimize(loss, global_step=global_step, var_list=variables)
 		return train_op
 
-	@staticmethod
-	def get_trainable_variables(trainable_scope_names=None):
-		vars = tf.trainable_variables()
-		if trainable_scope_names is not None:
-			vars_to_train = list()
-			for scope_name in trainable_scope_names:
-				for var in vars:
-					if var.name.startswith(scope_name):
-						vars_to_train.append(var)
-			return vars_to_train
-		else:
-			return vars
-
-	def fit(self, batch_gen=None, batch_size=32, learning_rate=1e-3, epochs=1, dropout_rate=0.5, learning_rate_decay=1):
+	def fit(self, batch_size=10, learning_rate=1e-3, epochs=1, dropout_rate=0.5, learning_rate_decay=1):
 		for epoch in range(epochs):
 			print('Epoch {}'.format(epoch))
-			if batch_gen is None:
-				batch_generator = self.corpus.batch_generator(batch_size, dataset_type='train')
+			batch_generator = self.corpus.batch_generator(batch_size, dataset_type='train')
 			for x, y in batch_generator:
-				feed_dict = self.fill_feed_dict(x,y,learning_rate,dropout_rate=dropout_rate,training=True,
+				feed_dict = self.fill_feed_dict(x, y, learning_rate, dropout_rate=dropout_rate, training=True,
 												 learning_rate_decay=learning_rate_decay)
 				self._sess.run(self._train_op, feed_dict=feed_dict)
 			self.eval_conll('valid', print_results=True)
@@ -133,7 +119,7 @@ class Network:
 		y_true_list = list()
 		y_pred_list = list()
 		print('Eval on {}:'.format(dataset_type))
-		for x, y_gt in self.corpus.batch_generator(batch_size=32, dataset_type=dataset_type):
+		for x, y_gt in self.corpus.batch_generator(batch_size=10, dataset_type=dataset_type):
 			y_pred = self.predict(x)
 			y_gt = self.corpus.tag_dict.batch_idxs2batch_toks(y_gt, filter_paddings=True)
 			for tags_pred, tags_gt in zip(y_pred, y_gt):
@@ -144,7 +130,7 @@ class Network:
 				y_pred_list.append('O')
 		return precision_recall_f1(y_true_list, y_pred_list, print_results, short_report)
 
-	def fill_feed_dict(self,x,y_t=None,learning_rate=None,training=False,dropout_rate=1.0,learning_rate_decay=1.0):
+	def fill_feed_dict(self, x, y_t=None, learning_rate=None, training=False, dropout_rate=1.0, learning_rate_decay=1.0):
 		feed_dict = dict()
 		feed_dict[self._x_w] = x['token']
 		feed_dict[self._x_c] = x['char']
@@ -165,7 +151,7 @@ class Network:
 		feed_dict = self.fill_feed_dict(x, training=False)
 		if self._use_crf:
 			y_pred = []
-			logits, trans_params, sequence_lengths = self._sess.run([self._logits,self._trainsition_params,
+			logits, trans_params, sequence_lengths = self._sess.run([self._logits, self._trainsition_params,
 																	 self._sequence_lengths],feed_dict=feed_dict)
 			for logit, sequence_length in zip(logits, sequence_lengths):
 				logit = logit[:int(sequence_length)]
@@ -174,3 +160,5 @@ class Network:
 		else:
 			y_pred = self._sess.run(self._y_pred, feed_dict=feed_dict)
 		return self.corpus.tag_dict.batch_idxs2batch_toks(y_pred, filter_paddings=True)
+
+	

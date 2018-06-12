@@ -65,9 +65,11 @@ class Dataset:
 		x = dict()
 		# Determine dimensions
 		batch_size = len(batch_x)
-		max_utt_len = max([len(utt) for utt in batch_x])
+		# Max utterance length
+		max_utt_len = max([len(utt) for utt in batch_x]) 
 
 		max_utt_len = max(max_utt_len, 2)
+		# Max token length
 		max_token_len = max([len(token) for utt in batch_x for token in utt])
 
 		x['token'] = np.ones([batch_size, max_utt_len], dtype=np.int32) * self.token_dict['<PAD>']
@@ -94,12 +96,10 @@ class Dataset:
 		# Prepare y batch
 		if batch_y is not None:
 			y = np.ones([batch_size, max_utt_len], dtype=np.int32) * self.tag_dict['<PAD>']
-		else:
-			y = None
-
-		if batch_y is not None:
 			for n, tags in enumerate(batch_y):
 				y[n, :len(tags)] = self.tag_dict.toks2idxs(tags)
+		else:
+			y = None
 
 		return x, y
 			 
@@ -118,7 +118,7 @@ class Vocabulary:
 		self.counter = 0
 		for token in special_tokens:
 			self._t2i[token] = self.counter
-			self.frequencies[token] += 0
+			self.frequencies[token] = 0
 			self._i2t.append(token)
 			self.counter += 1
 		if tokens is not None:
@@ -140,9 +140,6 @@ class Vocabulary:
 
 	def batch_idxs2batch_toks(self, b_idxs, filter_paddings=False):
 		return [self.idxs2toks(idxs, filter_paddings) for idxs in b_idxs]
-
-	def idx2tok(self, idx):
-		return self._i2t[idx]
 
 	def idxs2toks(self, idxs, filter_paddings=False):
 		toks = []
