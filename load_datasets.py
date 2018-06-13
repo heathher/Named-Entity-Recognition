@@ -1,59 +1,78 @@
-from __future__ import unicode_literals
-from collections import namedtuple
 import os
 import re
+from collections import namedtuple
 
-DEVSET_DIR = "/devset"
-TESTSET_DIT = "/testset"
-RESULT_DIR = "/results"
 
 FactRu = namedtuple('FactRu', ['id', 'text'])
 
-def load_data(path):
-    with open(path) as file:
-        return file.read()
-
 def read_dataset(dir_path, filetype):
-    for filename in os.listdir(dir_path):
-        match = re.match('book_(\d+)\.'+filetype, filename)
-        if match:
-            id = int(match.group(1))
-            path = os.path.join(dir_path, filename)
-            text = load_data(path)
-            yield FactRu(id, text)
+	for filename in os.listdir(dir_path):
+		match = re.match('book_(\d+)\.'+filetype, filename)
+		if match:
+			id = int(match.group(1))
+			path = os.path.join(dir_path, filename)
+			with open(path) as f:
+				text = list()
+				for line in f:
+					items = line.split()
+					if len(items)>1:
+						if filetype == 'tokens':
+							text.append(items[3])
+						else:
+							entity = list()
+							entity.append(items[1])
+							counter = 0
+							while items[counter+2] != '#':
+								counter += 1
+							ind_begin = counter+3
+							while counter > 0:
+								entity.append(items[ind_begin])
+								counter -= 1
+								ind_begin += 1
+							text.append(entity)
+			yield FactRu(id, text)
 
-#only for PERSON
-def make_labels(objects):
-    result = []
-    tokenized_objects = tokenize(objects)
-    for _ in tokenized_objects:
-        if _.text[1] == 'Person':
-            index = _.text.index('#')
-            result.append(FactRu(_.id, ['PER', _.text[index+1:]]))
-        elif _.text[1] == 'Location':
-            index = _.text.index('#')
-            result.append(FactRu(_.id, ['LOC', _.text[index+1:]]))
-        elif _.text[1] == 'Org':
-            index = _.text.index('#')
-            result.append(FactRu(_.id, ['ORG', _.text[index+1:]]))
-    return result
-
-def tokenizer(text):
-    _split = re.compile(r'([^\w_-]|[+])', re.UNICODE).split
-    return [t for t in _split(text) if t and not t.isspace()]
-
-def tokenize(texts):
-    result = []
-    for text in texts:
-        for line in text.text.splitlines():
-            result.append(FactRu(text.id, tokenizer(line)))
-    return result
-
-def load_dataset(dir):
-    train_text = list(read_dataset(dir+DEVSET_DIR, 'txt'))
-    test_text = list(read_dataset(dir+TESTSET_DIT, 'txt'))
-    train_objects = list(read_dataset(dir+DEVSET_DIR, 'objects'))
-    test_objects = list(read_dataset(dir+TESTSET_DIT, 'objects'))
-    train_labels = make_labels(train_objects)
-    test_labels = make_labels(test_objects)
-    return [[train_text, train_labels], [test_text, test_labels]]
+def make_xy(tokens, objects):
+	xy_list = list()
+	tokens_list = list()
+	tags_list = list()
+	for i in range(len(tokens)):
+		tokens_list_for_id = tokens[i]
+		tags_list_for_id = [tags for tags in objects if tokens_list_for_id.id == tags.id]
+		tokens_list_for_id_text = tokens_list_for_id.text
+		tags_list_for_id_text = tags_list_for_id[0].text
+		prev_tag = None
+		tag = None
+		for ind in range(len(tokens_list_for_id_text)):
+			token = tokens_list_for_id_text[ind]
+			tokens_list.append(token)
+			for tags in tags_list_for_id_text:
+				match = [word for word in tags if word == token]
+				if len(match) > 0:
+					tag = tags[0]
+			if tag == None:
+				tag = 'O'
+			elif tag == 'Person':
+				tag = 'PER'
+			elif tag == 'Org':
+				tag = 'ORG'
+			elif tag == 'Location':
+				tag = 'LOC'
+			else:
+				tag = 'MISC'
+			
+			if tag == prev_tag and tag != 'O':
+				prev_tag = tag
+				tag = 'I-' + tag
+			elif tag != 'O':
+				prev_tag = tag
+				tag = 'B-' + tag
+			else:
+				prev_tag = tag
+			tags_list.append(tag)
+			tag = None
+			if token == '.':
+				xy_list.append((tokens_list, tags_list))
+				tokens_list = list()
+				tags_list = list()
+	return xy_list
