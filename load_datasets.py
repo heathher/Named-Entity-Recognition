@@ -59,8 +59,7 @@ def make_xy(tokens, objects):
 			elif tag == 'Location':
 				tag = 'LOC'
 			else:
-				tag = 'MISC'
-			
+				tag = 'MISC'			
 			if tag == prev_tag and tag != 'O':
 				prev_tag = tag
 				tag = 'I-' + tag

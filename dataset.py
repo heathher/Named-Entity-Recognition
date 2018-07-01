@@ -59,7 +59,7 @@ class Dataset:
 			x_batch = [tokens_tags_pairs[ind][0] for ind in order[batch_start: batch_end]]
 			y_batch = [tokens_tags_pairs[ind][1] for ind in order[batch_start: batch_end]]
 			x, y = self.tokens_batch_to_numpy_batch(x_batch, y_batch)
-			yield x, y
+			yield x, y, x_batch
 
 	def tokens_batch_to_numpy_batch(self, batch_x, batch_y=None):
 		x = dict()

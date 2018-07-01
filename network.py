@@ -105,7 +105,7 @@ class Network:
 		for epoch in range(epochs):
 			print('Epoch {}'.format(epoch))
 			batch_generator = self.corpus.batch_generator(batch_size, dataset_type='train')
-			for x, y in batch_generator:
+			for x, y, token in batch_generator:
 				feed_dict = self.fill_feed_dict(x, y, learning_rate, dropout_rate=dropout_rate, training=True,
 												 learning_rate_decay=learning_rate_decay)
 				self._sess.run(self._train_op, feed_dict=feed_dict)
@@ -118,8 +118,9 @@ class Network:
 	def eval_conll(self, dataset_type='test', print_results=True, short_report=True):
 		y_true_list = list()
 		y_pred_list = list()
+		file = open('result'+dataset_type+'.txt', 'w')
 		print('Eval on {}:'.format(dataset_type))
-		for x, y_gt in self.corpus.batch_generator(batch_size=10, dataset_type=dataset_type):
+		for x, y_gt, token in self.corpus.batch_generator(batch_size=10, dataset_type=dataset_type):
 			y_pred = self.predict(x)
 			y_gt = self.corpus.tag_dict.batch_idxs2batch_toks(y_gt, filter_paddings=True)
 			for tags_pred, tags_gt in zip(y_pred, y_gt):
@@ -128,6 +129,11 @@ class Network:
 					y_pred_list.append(tag_predicted)
 				y_true_list.append('O')
 				y_pred_list.append('O')
+			for tok, y_t, y_p in zip(token, y_gt, y_pred):
+				for idx in range(len(tok)):
+					file.write("%s ? %s %s\n" %(tok[idx], y_t[idx], y_p[idx]))
+				file.write('\n')
+		file.close()
 		return precision_recall_f1(y_true_list, y_pred_list, print_results, short_report)
 
 	def fill_feed_dict(self, x, y_t=None, learning_rate=None, training=False, dropout_rate=1.0, learning_rate_decay=1.0):
