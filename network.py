@@ -5,10 +5,12 @@ import os
 from layers import character_embedding_network, embedding_layer, biLSTM
 from evaluation import precision_recall_f1
 
+MODEL_PATH = 'model/'
+MODEL_FILE_NAME = 'ner_model.ckpt'
 
 class Network:
 	def __init__(self, corpus, n_filters=(128, 128), filter_width=3, token_embeddings_dim=100, char_embeddings_dim=30,
-				use_char_embeddins=True, embeddings_dropout=False, use_crf=False, char_filter_width=3):
+				use_char_embeddins=True, embeddings_dropout=False, use_crf=False, char_filter_width=3, pretrained_model_path=None):
 
 		tf.reset_default_graph()
 
@@ -82,6 +84,8 @@ class Network:
 		self._train_op = self.get_train_op(loss, learning_rate_ph, lr_decay_rate=learning_rate_decay_ph)
 		sess.run(tf.global_variables_initializer())
 		self._mask = mask
+		if pretrained_model_path is not None:
+			self.load(pretrained_model_path)
 
 	def get_train_op(self, loss, learning_rate, lr_decay_rate=None):
 		global_step = tf.Variable(0, trainable=False)
@@ -110,6 +114,7 @@ class Network:
 												 learning_rate_decay=learning_rate_decay)
 				self._sess.run(self._train_op, feed_dict=feed_dict)
 			self.eval_conll('valid', print_results=True)
+			self.save()
 		self.eval_conll(dataset_type='train', short_report=False)
 		self.eval_conll(dataset_type='valid', short_report=False)
 		results = self.eval_conll(dataset_type='test', short_report=False)
@@ -166,5 +171,17 @@ class Network:
 		else:
 			y_pred = self._sess.run(self._y_pred, feed_dict=feed_dict)
 		return self.corpus.tag_dict.batch_idxs2batch_toks(y_pred, filter_paddings=True)
+
+	def load(self, model_file_path):
+		saver = tf.train.Saver()
+		saver.restore(self._sess, model_file_path)
+
+	def save(self, model_file_path=None):
+		if model_file_path is None:
+			if not os.path.exists(MODEL_PATH):
+				os.mkdir(MODEL_PATH)
+			model_file_path = os.path.join(MODEL_PATH, MODEL_FILE_NAME)
+		saver = tf.train.Saver()
+		saver.save(self._sess, model_file_path)
 
 	
