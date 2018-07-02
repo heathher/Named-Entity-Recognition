@@ -5,7 +5,7 @@ import json
 import os
 import layers
 
-from load_datasets import read_dataset, make_xy
+from load_datasets import read_dataset, make_xy, write_to_file
 
 devset_dir = "factRuEval-2016/devset"
 testset_dir = "factRuEval-2016/testset"
@@ -21,16 +21,20 @@ def main():
 	xy_list_train = make_xy(train_tokens, train_objects)
 	xy_list_test = make_xy(test_tokens, test_objects)
 
-	cut_index = len(xy_list_train)/2
 
-	dataset_dict['train'] = xy_list_train[:500]
-	dataset_dict['valid'] = xy_list_train[500:]
+	dataset_dict['train'] = xy_list_train[:1000]
+	dataset_dict['valid'] = xy_list_train[1000:]
 	dataset_dict['test'] = xy_list_test
+
+	write_to_file('train', dataset_dict)
+	write_to_file('valid', dataset_dict)
+	write_to_file('test', dataset_dict)
 	
 	for key in dataset_dict:
 		print('Number of samples (sentences) in {:<5}: {}'.format(key, len(dataset_dict[key])))
 
 	corp = Dataset(dataset_dict)
+
 
 	model_params = {"filter_width": 3,"n_filters": [200, 200,], "token_embeddings_dim": 100, "char_embeddings_dim": 30, "use_crf": True, "embeddings_dropout": True}
 	net = Network(corp, **model_params)

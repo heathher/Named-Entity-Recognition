@@ -56,7 +56,7 @@ def make_xy(tokens, objects):
 				tag = 'PER'
 			elif tag == 'Org':
 				tag = 'ORG'
-			elif tag == 'Location':
+			elif tag == 'Location' or tag =='LocOrg':
 				tag = 'LOC'
 			else:
 				tag = 'MISC'			
@@ -71,7 +71,15 @@ def make_xy(tokens, objects):
 			tags_list.append(tag)
 			tag = None
 			if token == '.':
-				xy_list.append((tokens_list, tags_list))
+				xy_list.append((tokens_list, tags_list,))
 				tokens_list = list()
 				tags_list = list()
 	return xy_list
+
+def write_to_file(dataset_type, dataset):
+	file = open(dataset_type+'.txt', 'w')
+	for token, tag in dataset[dataset_type]:
+		for idx in range(len(token)):
+			file.write("%s %s\n" %(token[idx], tag[idx]))
+		file.write('\n')
+	file.close()

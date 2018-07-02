@@ -30,7 +30,7 @@ def main():
 	for key in dataset_dict:
 		print('Number of samples (sentences) in {:<5}: {}'.format(key, len(dataset_dict[key])))
 	corp = Dataset(dataset_dict)
-
+	
 	model_params = {"filter_width": 3,"n_filters": [200, 200,], "token_embeddings_dim": 100, "char_embeddings_dim": 30, "use_crf": True, "embeddings_dropout": True}
 	net = Network(corp, **model_params)
 
