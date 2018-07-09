@@ -27,6 +27,8 @@ class Network:
 		dropout_ph = tf.placeholder_with_default(1.0, shape=[])
 		training_ph = tf.placeholder_with_default(False, shape=[])
 		learning_rate_decay_ph = tf.placeholder(dtype=tf.float32, shape=[], name='learning_rate_decay')
+		momentum_ph = tf.placeholder(dtype=tf.float32, shape=[], name='momentum')
+		max_grad_ph = tf.placeholder(dtype=tf.float32, shape=[], name='max_grad')
 
 		# Embeddings
 		with tf.variable_scope('Embeddings'):
@@ -61,7 +63,6 @@ class Network:
 
 		# Initialize session
 		sess = tf.Session()
-
 		self._use_crf = use_crf
 		#self.summary = tf.summary.merge_all()
 		self._learning_rate_decay_ph = learning_rate_decay_ph
@@ -81,13 +82,16 @@ class Network:
 			self._logits = logits
 			self._trainsition_params = trainsition_params
 			self._sequence_lengths = sequence_lengths
-		self._train_op = self.get_train_op(loss, learning_rate_ph, lr_decay_rate=learning_rate_decay_ph)
+		self._train_op = self.get_train_op(loss, learning_rate_ph, lr_decay_rate=learning_rate_decay_ph, momentum=momentum_ph, max_grad=max_grad_ph)
 		sess.run(tf.global_variables_initializer())
 		self._mask = mask
 		if pretrained_model_path is not None:
 			self.load(pretrained_model_path)
+		self._momentum = momentum_ph
+		self._max_grad = max_grad_ph
 
-	def get_train_op(self, loss, learning_rate, lr_decay_rate=None):
+
+	def get_train_op(self, loss, learning_rate, lr_decay_rate=None, momentum=None, max_grad=None):
 		global_step = tf.Variable(0, trainable=False)
 		try:
 			n_training_samples = len(self.corpus.dataset['train'])
@@ -102,16 +106,21 @@ class Network:
 		variables = tf.trainable_variables()
 		extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 		with tf.control_dependencies(extra_update_ops):
-			train_op = tf.train.AdamOptimizer(learning_rate).minimize(loss, global_step=global_step, var_list=variables)
+			#train_op = tf.train.AdamOptimizer(learning_rate).minimize(loss, global_step=global_step, var_list=variables)
+			train_op = tf.train.MomentumOptimizer(learning_rate, momentum)
+			gradients, variables = zip(*train_op.compute_gradients(loss))
+			gradients, _ = tf.clip_by_global_norm(gradients, max_grad)
+			train_op = train_op.apply_gradients(zip(gradients, variables))
 		return train_op
 
-	def fit(self, batch_size=10, learning_rate=1e-3, epochs=1, dropout_rate=0.5, learning_rate_decay=1):
+	def fit(self, batch_size=10, learning_rate=1e-3, epochs=1, dropout_rate=0.5, learning_rate_decay=1, 
+			momentum=0.9, max_grad=5.0):
 		for epoch in range(epochs):
 			print('Epoch {}'.format(epoch))
 			batch_generator = self.corpus.batch_generator(batch_size, dataset_type='train')
 			for x, y, token in batch_generator:
 				feed_dict = self.fill_feed_dict(x, y, learning_rate, dropout_rate=dropout_rate, training=True,
-												 learning_rate_decay=learning_rate_decay)
+												 learning_rate_decay=learning_rate_decay, momentum = momentum, max_grad=max_grad)
 				self._sess.run(self._train_op, feed_dict=feed_dict)
 			self.eval_conll('valid', print_results=True)
 			self.save()
@@ -141,17 +150,20 @@ class Network:
 		file.close()
 		return precision_recall_f1(y_true_list, y_pred_list, print_results, short_report)
 
-	def fill_feed_dict(self, x, y_t=None, learning_rate=None, training=False, dropout_rate=1.0, learning_rate_decay=1.0):
+	def fill_feed_dict(self, x, y_t=None, learning_rate=None, training=False, dropout_rate=1.0, learning_rate_decay=1.0, 
+						momentum=0.9, max_grad=5.0):
 		feed_dict = dict()
 		feed_dict[self._x_w] = x['token']
 		feed_dict[self._x_c] = x['char']
 		feed_dict[self._mask] = x['mask']
 		feed_dict[self._training_ph] = training
+		feed_dict[self._max_grad] = max_grad
 		if y_t is not None:
 			feed_dict[self._y_true] = y_t
 		if learning_rate is not None:
 			feed_dict[self._learning_rate_ph] = learning_rate
 			feed_dict[self._learning_rate_decay_ph] = learning_rate_decay
+			feed_dict[self._momentum] = momentum
 		if self._use_dropout is not None and training:
 			feed_dict[self._dropout] = dropout_rate
 		else:
