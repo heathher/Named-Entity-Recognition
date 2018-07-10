@@ -125,7 +125,7 @@ class Dataset:
 			else:
 				emb_matrix[idx] = np.random.randn(1, emb_len).astype(np.float32)
 		print("Embeddings matrix shape: ", emb_matrix.shape)
-		print(emb_matrix[:10])
+		return emb_matrix
 			 
 
 class Vocabulary:
