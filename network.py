@@ -20,7 +20,7 @@ class Network:
 
 		# Create placeholders
 		if corpus.embeddings is not None:
-			x_word = tf.placeholder(dtype=tf.int32, shape=[None, None, corpus.emb_size], name='x_word')
+			x_word = tf.placeholder(dtype=tf.float32, shape=[None, None, corpus.emb_size], name='x_word')
 		else:
 			x_word = tf.placeholder(dtype=tf.int32, shape=[None, None], name='x_word')
 		x_char = tf.placeholder(dtype=tf.int32, shape=[None, None, None], name='x_char')
@@ -35,13 +35,14 @@ class Network:
 
 		# Embeddings
 		with tf.variable_scope('Embeddings'):
-			w_emb = embedding_layer(x_word, n_tokens=n_tokens, token_embedding_dim=token_embeddings_dim)
-			if use_char_embeddins:
-				c_emb = character_embedding_network(x_char, n_characters=n_chars, char_embedding_dim=char_embeddings_dim,
-													filter_width=char_filter_width)
-				emb = tf.concat([w_emb, c_emb], axis=-1)
+			if corpus.embeddings is None:
+				w_emb = embedding_layer(x_word, n_tokens=n_tokens, token_embedding_dim=token_embeddings_dim)
+				if use_char_embeddins:
+					c_emb = character_embedding_network(x_char, n_characters=n_chars, char_embedding_dim=char_embeddings_dim,
+														filter_width=char_filter_width)
+					emb = tf.concat([w_emb, c_emb], axis=-1)
 			else:
-				emb = w_emb
+				emb = x_word
 		# Dropout for embeddings
 		if embeddings_dropout:
 			emb = tf.layers.dropout(emb, dropout_ph, training=training_ph)

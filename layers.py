@@ -5,8 +5,8 @@ def biLSTM(input_units, n_hidden_list):
 	units = input_units
 	for n, n_h in enumerate(n_hidden_list):
 		with tf.variable_scope('LSTM' + str(n)):
-			forward_cell = tf.nn.rnn_cell.LSTMCell(n_h)
-			backward_cell = tf.nn.rnn_cell.LSTMCell(n_h)
+			forward_cell = tf.contrib.rnn.LSTMCell(n_h)
+			backward_cell = tf.contrib.rnn.LSTMCell(n_h)
 			(rnn_output_fw, rnn_output_bw), _ = tf.nn.bidirectional_dynamic_rnn(forward_cell, backward_cell, units, dtype=tf.float32)
 			units = tf.concat([rnn_output_fw, rnn_output_bw], axis=2)
 	return units
