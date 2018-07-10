@@ -19,7 +19,10 @@ class Network:
 		n_chars = len(corpus.char_dict)
 
 		# Create placeholders
-		x_word = tf.placeholder(dtype=tf.int32, shape=[None, None], name='x_word')
+		if corpus.embeddings is not None:
+			x_word = tf.placeholder(dtype=tf.int32, shape=[None, None, corpus.embeddings.vector_size], name='x_word')
+		else:
+			x_word = tf.placeholder(dtype=tf.int32, shape=[None, None], name='x_word')
 		x_char = tf.placeholder(dtype=tf.int32, shape=[None, None, None], name='x_char')
 		y_true = tf.placeholder(dtype=tf.int32, shape=[None, None], name='y_tag')
 		mask = tf.placeholder(dtype=tf.float32, shape=[None, None], name='mask')
@@ -43,7 +46,7 @@ class Network:
 		if embeddings_dropout:
 			emb = tf.layers.dropout(emb, dropout_ph, training=training_ph)
 		# Make bi-LSTM
-			units = biLSTM(emb, n_filters)
+		units = biLSTM(emb, n_filters)
 
 		# Classifier
 		with tf.variable_scope('Classifier'):

@@ -11,13 +11,16 @@ random.seed(SEED)
 
 
 class Dataset:
-	def __init__(self, dataset):
+	def __init__(self, dataset, embeddings_filepath=None):
 		if dataset is not None:
 			self.dataset = dataset
 			self.token_dict = Vocabulary(self.get_tokens())
 			self.tag_dict = Vocabulary(self.get_tags(), is_tags=True)
 			self.char_dict = Vocabulary(self.get_characters())
-			self.embeddings = None
+			if embeddings_filepath is not None:
+				self.embeddings = self.load_embeddings(embeddings_filepath)
+			else:
+				self.embeddings = None
 		else:
 			print("Load dataset")
 	
@@ -41,6 +44,7 @@ class Dataset:
 			for token in tokens:
 				for character in token:
 					yield character
+
 
 	def batch_generator(self, batch_size, dataset_type='train', shuffle=True,
 						allow_smaller_last_batch=True):
@@ -102,10 +106,30 @@ class Dataset:
 			y = None
 
 		return x, y
+
+	def load_embeddings(self, embeddings_filepath):
+		model = {}
+		emb_len = 0
+		f = open(embeddings_filepath, 'r')
+		for line in f:
+			splitline = line.split()
+			word = splitline[0]
+			embedding = np.array([float(val) for val in splitline[1:]])
+			emb_len = embedding.shape[0]
+			model[word] = embedding
+		print("Done", len(model), " words loaded!")
+		emb_matrix = np.zeros((len(self.token_dict._i2t), emb_len))
+		for idx in range(len(self.token_dict._i2t)):
+			if model.get(self.token_dict._i2t[idx]) is not None:
+				emb_matrix[idx] = model[self.token_dict._i2t[idx]]
+			else:
+				emb_matrix[idx] = np.random.randn(1, emb_len).astype(np.float32)
+		print("Embeddings matrix shape: ", emb_matrix.shape)
+		print(emb_matrix[:10])
 			 
 
 class Vocabulary:
-	def __init__(self, tokens=None, is_tags=False):
+	def __init__(self, tokens=None, is_tags=False, embeddings_filepath=None):
 		if is_tags:
 			special_tokens = SPECIAL_TAGS
 			self._t2i = dict()
@@ -123,7 +147,7 @@ class Vocabulary:
 			self.counter += 1
 		if tokens is not None:
 			self.update_dict(tokens)
-
+		
 	def update_dict(self, tokens):
 		for token in tokens:
 			if token not in self._t2i:
@@ -153,4 +177,3 @@ class Vocabulary:
 
 	def __getitem__(self, key):
 		return self._t2i[key]
-
