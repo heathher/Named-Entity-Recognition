@@ -19,6 +19,7 @@ class Dataset:
 			self.char_dict = Vocabulary(self.get_characters())
 			if embeddings_filepath is not None:
 				self.embeddings = self.load_embeddings(embeddings_filepath)
+				self.emb_size = 100
 			else:
 				self.embeddings = None
 		else:

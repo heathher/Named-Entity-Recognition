@@ -20,7 +20,7 @@ class Network:
 
 		# Create placeholders
 		if corpus.embeddings is not None:
-			x_word = tf.placeholder(dtype=tf.int32, shape=[None, None, corpus.embeddings.vector_size], name='x_word')
+			x_word = tf.placeholder(dtype=tf.int32, shape=[None, None, corpus.emb_size], name='x_word')
 		else:
 			x_word = tf.placeholder(dtype=tf.int32, shape=[None, None], name='x_word')
 		x_char = tf.placeholder(dtype=tf.int32, shape=[None, None, None], name='x_char')
