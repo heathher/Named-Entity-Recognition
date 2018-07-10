@@ -48,6 +48,8 @@ class Network:
 		# Make bi-LSTM
 		units = biLSTM(emb, n_filters)
 
+		units = tf.layers.dropout(units, dropout_ph, training=training_ph)
+
 		# Classifier
 		with tf.variable_scope('Classifier'):
 			logits = tf.layers.dense(units, n_tags, kernel_initializer=xavier_initializer())
