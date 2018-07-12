@@ -11,8 +11,11 @@ def biLSTM(input_units, n_hidden_list):
 			units = tf.concat([rnn_output_fw, rnn_output_bw], axis=2)
 	return units
 
-def embedding_layer(input_placeholder, n_tokens, token_embedding_dim):
-	tok_mat = np.random.randn(n_tokens, token_embedding_dim).astype(np.float32) / np.sqrt(token_embedding_dim)
+def embedding_layer(input_placeholder, n_tokens, token_embedding_dim, token_embedding_matrix=None):
+	if token_embedding_matrix is not None:
+		tok_mat = token_embedding_matrix
+	else:
+		tok_mat = np.random.randn(n_tokens, token_embedding_dim).astype(np.float32) / np.sqrt(token_embedding_dim)
 	tok_emb_mat = tf.Variable(tok_mat)
 	embeddings = tf.nn.embedding_lookup(tok_emb_mat, input_placeholder)
 	return embeddings

@@ -19,10 +19,7 @@ class Network:
 		n_chars = len(corpus.char_dict)
 
 		# Create placeholders
-		if corpus.embeddings is not None:
-			x_word = tf.placeholder(dtype=tf.float32, shape=[None, None, corpus.emb_size], name='x_word')
-		else:
-			x_word = tf.placeholder(dtype=tf.int32, shape=[None, None], name='x_word')
+		x_word = tf.placeholder(dtype=tf.int32, shape=[None, None], name='x_word')
 		x_char = tf.placeholder(dtype=tf.int32, shape=[None, None, None], name='x_char')
 		y_true = tf.placeholder(dtype=tf.int32, shape=[None, None], name='y_tag')
 		mask = tf.placeholder(dtype=tf.float32, shape=[None, None], name='mask')
@@ -35,14 +32,12 @@ class Network:
 
 		# Embeddings
 		with tf.variable_scope('Embeddings'):
-			if corpus.embeddings is None:
-				w_emb = embedding_layer(x_word, n_tokens=n_tokens, token_embedding_dim=token_embeddings_dim)
-				if use_char_embeddins:
-					c_emb = character_embedding_network(x_char, n_characters=n_chars, char_embedding_dim=char_embeddings_dim,
-														filter_width=char_filter_width)
-					emb = tf.concat([w_emb, c_emb], axis=-1)
-			else:
-				emb = x_word
+			w_emb = embedding_layer(x_word, n_tokens=n_tokens, token_embedding_dim=token_embeddings_dim, token_embedding_matrix=corpus.emb_mat)
+			w_emb = tf.cast(w_emb, tf.float32)
+			if use_char_embeddins:
+				c_emb = character_embedding_network(x_char, n_characters=n_chars, char_embedding_dim=char_embeddings_dim,
+													filter_width=char_filter_width)
+				emb = tf.concat([w_emb, c_emb], axis=-1)
 		# Dropout for embeddings
 		if embeddings_dropout:
 			emb = tf.layers.dropout(emb, dropout_ph, training=training_ph)
@@ -69,6 +64,8 @@ class Network:
 
 		# Initialize session
 		sess = tf.Session()
+		self.filewriter = tf.summary.FileWriter('graphs', sess.graph)
+		self.summary = tf.summary.merge_all()
 		self._use_crf = use_crf
 		#self.summary = tf.summary.merge_all()
 		self._learning_rate_decay_ph = learning_rate_decay_ph
@@ -112,7 +109,8 @@ class Network:
 		variables = tf.trainable_variables()
 		extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 		with tf.control_dependencies(extra_update_ops):
-			#train_op = tf.train.AdamOptimizer(learning_rate).minimize(loss, global_step=global_step, var_list=variables)
+			#train_op = tf.train.AdamOptimizer(learning_rate)
+			#.minimize(loss, global_step=global_step, var_list=variables)
 			train_op = tf.train.MomentumOptimizer(learning_rate, momentum)
 			gradients, variables = zip(*train_op.compute_gradients(loss))
 			gradients, _ = tf.clip_by_global_norm(gradients, max_grad)
@@ -127,6 +125,8 @@ class Network:
 			for x, y, token in batch_generator:
 				feed_dict = self.fill_feed_dict(x, y, learning_rate, dropout_rate=dropout_rate, training=True,
 												 learning_rate_decay=learning_rate_decay, momentum = momentum, max_grad=max_grad)
+				#summary, _ = self._sess.run([self.summary, self._train_op], feed_dict=feed_dict)
+				#self.filewriter.add_summary(summary)
 				self._sess.run(self._train_op, feed_dict=feed_dict)
 			self.eval_conll('valid', print_results=True)
 			self.save()
@@ -159,7 +159,10 @@ class Network:
 	def fill_feed_dict(self, x, y_t=None, learning_rate=None, training=False, dropout_rate=1.0, learning_rate_decay=1.0, 
 						momentum=0.9, max_grad=5.0):
 		feed_dict = dict()
-		feed_dict[self._x_w] = x['token']
+		if self.corpus.embeddings is not None:
+			feed_dict[self._x_w] = x['emb']
+		else:
+			feed_dict[self._x_w] = x['token']
 		feed_dict[self._x_c] = x['char']
 		feed_dict[self._mask] = x['mask']
 		feed_dict[self._training_ph] = training

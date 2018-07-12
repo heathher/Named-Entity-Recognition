@@ -22,6 +22,7 @@ class Dataset:
 				self.emb_size = 100
 			else:
 				self.embeddings = None
+				self.emb_mat = None
 		else:
 			print("Load dataset")
 	
@@ -72,7 +73,6 @@ class Dataset:
 		batch_size = len(batch_x)
 		# Max utterance length
 		max_utt_len = max([len(utt) for utt in batch_x]) 
-
 		max_utt_len = max(max_utt_len, 2)
 		# Max token length
 		max_token_len = max([len(token) for utt in batch_x for token in utt])
@@ -130,14 +130,14 @@ class Dataset:
 			emb_len = embedding.shape[0]
 			model[word] = embedding
 		print("Done", len(model), " words loaded!")
-		# emb_matrix = np.zeros((len(self.token_dict._i2t), emb_len))
-		# for idx in range(len(self.token_dict._i2t)):
-		# 	if model.get(self.token_dict._i2t[idx]) is not None:
-		# 		emb_matrix[idx] = model[self.token_dict._i2t[idx]]
-		# 	else:
-		# 		emb_matrix[idx] = np.random.randn(1, emb_len).astype(np.float32)
-		# print("Embeddings matrix shape: ", emb_matrix.shape)
-		# return emb_matrix
+		emb_matrix = np.zeros((len(self.token_dict._i2t), emb_len))
+		for idx in range(len(self.token_dict._i2t)):
+			if model.get(self.token_dict._i2t[idx]) is not None:
+				emb_matrix[idx] = model[self.token_dict._i2t[idx]]
+			else:
+				emb_matrix[idx] = np.random.randn(1, emb_len).astype(np.float32)
+		print("Embeddings matrix shape: ", emb_matrix.shape)
+		self.emb_mat = emb_matrix
 		return model
 			 
 

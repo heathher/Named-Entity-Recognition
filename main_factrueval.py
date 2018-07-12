@@ -20,10 +20,9 @@ def main():
 
 	xy_list_train = make_xy(train_tokens, train_objects)
 	xy_list_test = make_xy(test_tokens, test_objects)
-
-
-	dataset_dict['train'] = xy_list_train[:1250]
-	dataset_dict['valid'] = xy_list_train[1250:]
+	
+	dataset_dict['train'] = xy_list_train[:1300]
+	dataset_dict['valid'] = xy_list_train[1300:]
 	dataset_dict['test'] = xy_list_test
 
 	write_to_file('train', dataset_dict)
@@ -36,10 +35,10 @@ def main():
 	corp = Dataset(dataset_dict)
 
 
-	model_params = {"filter_width": 6,"n_filters": [200, 200,], "token_embeddings_dim": 100, "char_embeddings_dim": 25, "use_crf": True, "embeddings_dropout": True}
+	model_params = {"filter_width": 6,"n_filters": [100, 100,], "token_embeddings_dim": 100, "char_embeddings_dim": 25, "use_crf": True, "embeddings_dropout": True}
 	net = Network(corp, **model_params)
 
-	learning_params = {'epochs': 100, 'dropout_rate': 0.5, 'learning_rate': 0.005, 'batch_size': 10, 'learning_rate_decay': 0.0, 
+	learning_params = {'epochs': 100, 'dropout_rate': 0.5, 'learning_rate': 0.005, 'batch_size': 10, 
 						'momentum': 0.9, 'max_grad': 5.0}
 	results = net.fit(**learning_params)
 
