@@ -19,11 +19,10 @@ class Network:
 		n_chars = len(corpus.char_dict)
 
 		# Create placeholders
-		if corpus.embeddings is not None:
-			x_word = tf.placeholder(dtype=tf.int32, shape=[None, None, corpus.embeddings.vector_size], name='x_word')
-		else:
-			x_word = tf.placeholder(dtype=tf.int32, shape=[None, None], name='x_word')
+		x_word = tf.placeholder(dtype=tf.int32, shape=[None, None], name='x_word')
 		x_char = tf.placeholder(dtype=tf.int32, shape=[None, None, None], name='x_char')
+		if corpus.embeddings is not None:
+			x_emb = tf.placeholder(dtype=tf.float32, shape=[None, None, corpus.emb_size], name='x_word')
 		y_true = tf.placeholder(dtype=tf.int32, shape=[None, None], name='y_tag')
 		mask = tf.placeholder(dtype=tf.float32, shape=[None, None], name='mask')
 		learning_rate_ph = tf.placeholder(dtype=tf.float32, shape=[], name='learning_rate')
@@ -35,13 +34,17 @@ class Network:
 
 		# Embeddings
 		with tf.variable_scope('Embeddings'):
-			w_emb = embedding_layer(x_word, n_tokens=n_tokens, token_embedding_dim=token_embeddings_dim)
+			w_emb = embedding_layer(x_word, n_tokens=n_tokens, token_embedding_dim=token_embeddings_dim, token_embedding_matrix=corpus.emb_mat)
+			#w_emb = tf.cast(w_emb, tf.float32)
+			#w_emb = tf.to_float(w_emb)
 			if use_char_embeddins:
 				c_emb = character_embedding_network(x_char, n_characters=n_chars, char_embedding_dim=char_embeddings_dim,
 													filter_width=char_filter_width)
 				emb = tf.concat([w_emb, c_emb], axis=-1)
 			else:
 				emb = w_emb
+		if corpus.embeddings is not None:
+			emb = tf.concat([emb, x_emb], axis=2)
 		# Dropout for embeddings
 		if embeddings_dropout:
 			emb = tf.layers.dropout(emb, dropout_ph, training=training_ph)
@@ -65,14 +68,14 @@ class Network:
 			predictions = tf.argmax(logits, axis=-1)
 
 		loss = tf.reduce_mean(loss_tensor)
-
 		# Initialize session
 		sess = tf.Session()
+		
 		self._use_crf = use_crf
-		#self.summary = tf.summary.merge_all()
 		self._learning_rate_decay_ph = learning_rate_decay_ph
 		self._x_w = x_word
 		self._x_c = x_char
+		self._x_emb = x_emb
 		self._y_true = y_true
 		self._y_pred = predictions
 		self._learning_rate_ph = learning_rate_ph
@@ -87,6 +90,8 @@ class Network:
 			self._logits = logits
 			self._trainsition_params = trainsition_params
 			self._sequence_lengths = sequence_lengths
+		self.filewriter = tf.summary.FileWriter('graphs', sess.graph)
+		self.summary = tf.summary.merge_all()
 		self._train_op = self.get_train_op(loss, learning_rate_ph, lr_decay_rate=learning_rate_decay_ph, momentum=momentum_ph, max_grad=max_grad_ph)
 		sess.run(tf.global_variables_initializer())
 		self._mask = mask
@@ -96,7 +101,8 @@ class Network:
 		self._max_grad = max_grad_ph
 
 
-	def get_train_op(self, loss, learning_rate, lr_decay_rate=None, momentum=None, max_grad=None):
+
+	def get_train_op(self, loss, learning_rate, lr_decay_rate=None, momentum=0.9, max_grad=5.0):
 		global_step = tf.Variable(0, trainable=False)
 		try:
 			n_training_samples = len(self.corpus.dataset['train'])
@@ -108,11 +114,13 @@ class Network:
 			learning_rate = tf.train.exponential_decay(learning_rate, global_step, decay_steps=decay_steps,
 													   decay_rate=lr_decay_rate, staircase=True)
 			self._learning_rate_decayed = learning_rate
-		variables = tf.trainable_variables()
+		#variables = tf.trainable_variables()
 		extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 		with tf.control_dependencies(extra_update_ops):
 			#train_op = tf.train.AdamOptimizer(learning_rate).minimize(loss, global_step=global_step, var_list=variables)
 			train_op = tf.train.MomentumOptimizer(learning_rate, momentum)
+			#for var in tf.all_variables():
+			#	print('>', var.name, var.dtype, var.shape)
 			gradients, variables = zip(*train_op.compute_gradients(loss))
 			gradients, _ = tf.clip_by_global_norm(gradients, max_grad)
 			train_op = train_op.apply_gradients(zip(gradients, variables))
@@ -126,6 +134,8 @@ class Network:
 			for x, y, token in batch_generator:
 				feed_dict = self.fill_feed_dict(x, y, learning_rate, dropout_rate=dropout_rate, training=True,
 												 learning_rate_decay=learning_rate_decay, momentum = momentum, max_grad=max_grad)
+				#summary, _ = self._sess.run([self.summary, self._train_op], feed_dict=feed_dict)
+				#self.filewriter.add_summary(summary)
 				self._sess.run(self._train_op, feed_dict=feed_dict)
 			self.eval_conll('valid', print_results=True)
 			self.save()
@@ -158,9 +168,13 @@ class Network:
 	def fill_feed_dict(self, x, y_t=None, learning_rate=None, training=False, dropout_rate=1.0, learning_rate_decay=1.0, 
 						momentum=0.9, max_grad=5.0):
 		feed_dict = dict()
+		# if self.corpus.embeddings is not None:
+		# 	feed_dict[self._x_w] = x['emb']
+		# else:
 		feed_dict[self._x_w] = x['token']
 		feed_dict[self._x_c] = x['char']
 		feed_dict[self._mask] = x['mask']
+		feed_dict[self._x_emb] = x['emb']
 		feed_dict[self._training_ph] = training
 		feed_dict[self._max_grad] = max_grad
 		if y_t is not None:

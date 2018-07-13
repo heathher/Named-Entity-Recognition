@@ -5,15 +5,18 @@ def biLSTM(input_units, n_hidden_list):
 	units = input_units
 	for n, n_h in enumerate(n_hidden_list):
 		with tf.variable_scope('LSTM' + str(n)):
-			forward_cell = tf.nn.rnn_cell.LSTMCell(n_h)
-			backward_cell = tf.nn.rnn_cell.LSTMCell(n_h)
+			forward_cell = tf.contrib.rnn.LSTMCell(n_h)
+			backward_cell = tf.contrib.rnn.LSTMCell(n_h)
 			(rnn_output_fw, rnn_output_bw), _ = tf.nn.bidirectional_dynamic_rnn(forward_cell, backward_cell, units, dtype=tf.float32)
 			units = tf.concat([rnn_output_fw, rnn_output_bw], axis=2)
 	return units
 
-def embedding_layer(input_placeholder, n_tokens, token_embedding_dim):
-	tok_mat = np.random.randn(n_tokens, token_embedding_dim).astype(np.float32) / np.sqrt(token_embedding_dim)
-	tok_emb_mat = tf.Variable(tok_mat)
+def embedding_layer(input_placeholder, n_tokens, token_embedding_dim, token_embedding_matrix=None):
+	if token_embedding_matrix is not None:
+		tok_mat = token_embedding_matrix
+	else:
+		tok_mat = np.random.randn(n_tokens, token_embedding_dim).astype(np.float32) / np.sqrt(token_embedding_dim)
+	tok_emb_mat = tf.Variable(tok_mat, name='tok_emb_mat')
 	embeddings = tf.nn.embedding_lookup(tok_emb_mat, input_placeholder)
 	return embeddings
 
