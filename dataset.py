@@ -130,7 +130,7 @@ class Dataset:
 			emb_len = embedding.shape[0]
 			model[word] = embedding
 		print("Done", len(model), " words loaded!")
-		emb_matrix = np.zeros((len(self.token_dict._i2t), emb_len))
+		emb_matrix = np.zeros((len(self.token_dict._i2t), emb_len), dtype='float32')
 		for idx in range(len(self.token_dict._i2t)):
 			if model.get(self.token_dict._i2t[idx]) is not None:
 				emb_matrix[idx] = model[self.token_dict._i2t[idx]]

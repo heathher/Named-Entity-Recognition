@@ -16,7 +16,7 @@ def embedding_layer(input_placeholder, n_tokens, token_embedding_dim, token_embe
 		tok_mat = token_embedding_matrix
 	else:
 		tok_mat = np.random.randn(n_tokens, token_embedding_dim).astype(np.float32) / np.sqrt(token_embedding_dim)
-	tok_emb_mat = tf.Variable(tok_mat)
+	tok_emb_mat = tf.Variable(tok_mat, name='tok_emb_mat')
 	embeddings = tf.nn.embedding_lookup(tok_emb_mat, input_placeholder)
 	return embeddings
 

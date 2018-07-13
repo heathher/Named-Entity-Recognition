@@ -36,7 +36,7 @@ def main():
 	
 	model_params = {"filter_width": 3,"n_filters": [200, 200,], "token_embeddings_dim": 100, 
 					"char_embeddings_dim": 30, "use_crf": True, "embeddings_dropout": True,
-					"pretrained_model_path": pretrained_model_path}
+					"pretrained_model_path": None}
 	net = Network(corp, **model_params)
 
 	learning_params = {'epochs': 50, 'dropout_rate': 0.5, 'learning_rate': 0.015, 'batch_size': 10, 'learning_rate_decay': 0.05, 
