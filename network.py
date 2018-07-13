@@ -21,6 +21,8 @@ class Network:
 		# Create placeholders
 		x_word = tf.placeholder(dtype=tf.int32, shape=[None, None], name='x_word')
 		x_char = tf.placeholder(dtype=tf.int32, shape=[None, None, None], name='x_char')
+		if corpus.embeddings is not None:
+			x_emb = tf.placeholder(dtype=tf.float32, shape=[None, None, corpus.embeddings.vector_size], name='x_word')
 		y_true = tf.placeholder(dtype=tf.int32, shape=[None, None], name='y_tag')
 		mask = tf.placeholder(dtype=tf.float32, shape=[None, None], name='mask')
 		learning_rate_ph = tf.placeholder(dtype=tf.float32, shape=[], name='learning_rate')
@@ -33,11 +35,14 @@ class Network:
 		# Embeddings
 		with tf.variable_scope('Embeddings'):
 			w_emb = embedding_layer(x_word, n_tokens=n_tokens, token_embedding_dim=token_embeddings_dim, token_embedding_matrix=corpus.emb_mat)
-			w_emb = tf.cast(w_emb, tf.float32)
 			if use_char_embeddins:
 				c_emb = character_embedding_network(x_char, n_characters=n_chars, char_embedding_dim=char_embeddings_dim,
 													filter_width=char_filter_width)
 				emb = tf.concat([w_emb, c_emb], axis=-1)
+			else:
+				emb = w_emb
+		if corpus.embeddings is not None:
+			emb = tf.concat([emb, x_emb], axis=2)
 		# Dropout for embeddings
 		if embeddings_dropout:
 			emb = tf.layers.dropout(emb, dropout_ph, training=training_ph)
@@ -67,7 +72,6 @@ class Network:
 		self.filewriter = tf.summary.FileWriter('graphs', sess.graph)
 		self.summary = tf.summary.merge_all()
 		self._use_crf = use_crf
-		#self.summary = tf.summary.merge_all()
 		self._learning_rate_decay_ph = learning_rate_decay_ph
 		self._x_w = x_word
 		self._x_c = x_char
@@ -94,7 +98,7 @@ class Network:
 		self._max_grad = max_grad_ph
 
 
-	def get_train_op(self, loss, learning_rate, lr_decay_rate=None, momentum=None, max_grad=None):
+	def get_train_op(self, loss, learning_rate, lr_decay_rate=None, momentum=0.9, max_grad=5.0):
 		global_step = tf.Variable(0, trainable=False)
 		try:
 			n_training_samples = len(self.corpus.dataset['train'])
@@ -106,7 +110,7 @@ class Network:
 			learning_rate = tf.train.exponential_decay(learning_rate, global_step, decay_steps=decay_steps,
 													   decay_rate=lr_decay_rate, staircase=True)
 			self._learning_rate_decayed = learning_rate
-		variables = tf.trainable_variables()
+		#variables = tf.trainable_variables()
 		extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 		with tf.control_dependencies(extra_update_ops):
 			#train_op = tf.train.AdamOptimizer(learning_rate)
@@ -125,8 +129,8 @@ class Network:
 			for x, y, token in batch_generator:
 				feed_dict = self.fill_feed_dict(x, y, learning_rate, dropout_rate=dropout_rate, training=True,
 												 learning_rate_decay=learning_rate_decay, momentum = momentum, max_grad=max_grad)
-				#summary, _ = self._sess.run([self.summary, self._train_op], feed_dict=feed_dict)
-				#self.filewriter.add_summary(summary)
+				summary, _ = self._sess.run([self.summary, self._train_op], feed_dict=feed_dict)
+				self.filewriter.add_summary(summary)
 				self._sess.run(self._train_op, feed_dict=feed_dict)
 			self.eval_conll('valid', print_results=True)
 			self.save()
