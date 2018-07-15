@@ -43,8 +43,8 @@ class Network:
 				emb = tf.concat([w_emb, c_emb], axis=-1)
 			else:
 				emb = w_emb
-		if corpus.embeddings is not None:
-			emb = tf.concat([emb, x_emb], axis=2)
+		#if corpus.embeddings is not None:
+		#	emb = tf.concat([emb, x_emb], axis=2)
 		# Dropout for embeddings
 		if embeddings_dropout:
 			emb = tf.layers.dropout(emb, dropout_ph, training=training_ph)
