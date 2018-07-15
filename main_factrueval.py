@@ -19,6 +19,7 @@ def main():
 	test_objects = list(read_dataset(testset_dir, 'objects'))
 
 	xy_list_train = make_xy(train_tokens, train_objects)
+	print(xy_list_train[:2])
 	xy_list_test = make_xy(test_tokens, test_objects)
 	
 	dataset_dict['train'] = xy_list_train[:1300]
@@ -32,7 +33,7 @@ def main():
 	for key in dataset_dict:
 		print('Number of samples (sentences) in {:<5}: {}'.format(key, len(dataset_dict[key])))
 
-	corp = Dataset(dataset_dict)
+	corp = Dataset(dataset_dict, embeddings_filepath='rus_emb/ruwikiruscorpora-nobigrams_upos_skipgram_300_5_2018.vec.gz')
 
 
 	model_params = {"filter_width": 6,"n_filters": [100, 100,], "token_embeddings_dim": 100, "char_embeddings_dim": 25, "use_crf": True, "embeddings_dropout": True}

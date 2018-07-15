@@ -19,7 +19,6 @@ class Dataset:
 			self.char_dict = Vocabulary(self.get_characters())
 			if embeddings_filepath is not None:
 				self.embeddings = self.load_embeddings(embeddings_filepath)
-				self.emb_size = 100
 			else:
 				self.embeddings = None
 				self.emb_mat = None
@@ -122,22 +121,37 @@ class Dataset:
 	def load_embeddings(self, embeddings_filepath):
 		model = {}
 		emb_len = 0
-		f = open(embeddings_filepath, 'r')
-		for line in f:
-			splitline = line.split()
-			word = splitline[0]
-			embedding = np.array([float(val) for val in splitline[1:]])
-			emb_len = embedding.shape[0]
-			model[word] = embedding
-		print("Done", len(model), " words loaded!")
-		emb_matrix = np.zeros((len(self.token_dict._i2t), emb_len), dtype='float32')
-		for idx in range(len(self.token_dict._i2t)):
-			if model.get(self.token_dict._i2t[idx]) is not None:
-				emb_matrix[idx] = model[self.token_dict._i2t[idx]]
-			else:
-				emb_matrix[idx] = np.random.randn(1, emb_len).astype(np.float32)
-		print("Embeddings matrix shape: ", emb_matrix.shape)
-		self.emb_mat = emb_matrix
+		if embeddings_filepath.endswith('.vec.gz'):
+			model = gensim.models.KeyedVectors.load_word2vec_format(embeddings_filepath, binary=False)
+			emb_len = 300
+			self.emb_size = emb_len
+			#model.init_sims(replace=True) # maybe need this
+			emb_matrix = np.zeros((len(self.token_dict._i2t), emb_len))
+			for idx in range(len(self.token_dict._i2t)):
+				if model.get(self.token_dict._i2t[idx]) is not None:
+					emb_matrix[idx] = model[self.token_dict._i2t[idx]]
+				else:
+					emb_matrix[idx] = np.random.randn(1, emb_len).astype(np.float32)
+			print("Embeddings matrix shape: ", emb_matrix.shape)
+			self.emb_mat = emb_matrix
+		else:
+			f = open(embeddings_filepath, 'r')
+			for line in f:
+				splitline = line.split()
+				word = splitline[0]
+				embedding = np.array([float(val) for val in splitline[1:]])
+				emb_len = embedding.shape[0]
+				model[word] = embedding
+			print("Done", len(model), " words loaded!")
+			self.emb_size = emb_len
+			emb_matrix = np.zeros((len(self.token_dict._i2t), emb_len))
+			for idx in range(len(self.token_dict._i2t)):
+				if model.get(self.token_dict._i2t[idx]) is not None:
+					emb_matrix[idx] = model[self.token_dict._i2t[idx]]
+				else:
+					emb_matrix[idx] = np.random.randn(1, emb_len).astype(np.float32)
+			print("Embeddings matrix shape: ", emb_matrix.shape)
+			self.emb_mat = emb_matrix
 		return model
 			 
 
