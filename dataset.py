@@ -144,7 +144,7 @@ class Dataset:
 				model[word] = embedding
 			print("Done", len(model), " words loaded!")
 			self.emb_size = emb_len
-			emb_matrix = np.zeros((len(self.token_dict._i2t), emb_len))
+			emb_matrix = np.zeros((len(self.token_dict._i2t), emb_len)).astype(np.float32)
 			for idx in range(len(self.token_dict._i2t)):
 				if model.get(self.token_dict._i2t[idx]) is not None:
 					emb_matrix[idx] = model[self.token_dict._i2t[idx]]

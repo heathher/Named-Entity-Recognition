@@ -35,7 +35,7 @@ class Network:
 		# Embeddings
 		with tf.variable_scope('Embeddings'):
 			w_emb = embedding_layer(x_word, n_tokens=n_tokens, token_embedding_dim=token_embeddings_dim, token_embedding_matrix=corpus.emb_mat)
-			#w_emb = tf.cast(w_emb, tf.float32)
+			w_emb = tf.cast(w_emb, tf.float32)
 			#w_emb = tf.to_float(w_emb)
 			if use_char_embeddins:
 				c_emb = character_embedding_network(x_char, n_characters=n_chars, char_embedding_dim=char_embeddings_dim,
@@ -43,8 +43,8 @@ class Network:
 				emb = tf.concat([w_emb, c_emb], axis=-1)
 			else:
 				emb = w_emb
-		#if corpus.embeddings is not None:
-		#	emb = tf.concat([emb, x_emb], axis=2)
+		if corpus.embeddings is not None:
+			emb = tf.concat([emb, x_emb], axis=2)
 		# Dropout for embeddings
 		if embeddings_dropout:
 			emb = tf.layers.dropout(emb, dropout_ph, training=training_ph)
@@ -75,7 +75,8 @@ class Network:
 		self._learning_rate_decay_ph = learning_rate_decay_ph
 		self._x_w = x_word
 		self._x_c = x_char
-		self._x_emb = x_emb
+		if corpus.embeddings is not None:
+			self._x_emb = x_emb
 		self._y_true = y_true
 		self._y_pred = predictions
 		self._learning_rate_ph = learning_rate_ph
@@ -174,7 +175,8 @@ class Network:
 		feed_dict[self._x_w] = x['token']
 		feed_dict[self._x_c] = x['char']
 		feed_dict[self._mask] = x['mask']
-		feed_dict[self._x_emb] = x['emb']
+		if self.corpus.embeddings is not None:
+			feed_dict[self._x_emb] = x['emb']
 		feed_dict[self._training_ph] = training
 		feed_dict[self._max_grad] = max_grad
 		if y_t is not None:
@@ -206,6 +208,7 @@ class Network:
 	def load(self, model_file_path):
 		saver = tf.train.Saver()
 		saver.restore(self._sess, model_file_path)
+			
 
 	def save(self, model_file_path=None):
 		if model_file_path is None:
