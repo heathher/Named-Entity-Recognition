@@ -209,7 +209,6 @@ class Network:
 		saver = tf.train.Saver()
 		saver.restore(self._sess, model_file_path)
 			
-
 	def save(self, model_file_path=None):
 		if model_file_path is None:
 			if not os.path.exists(MODEL_PATH):
