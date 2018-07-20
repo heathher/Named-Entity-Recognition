@@ -1,6 +1,8 @@
 from collections import defaultdict, Counter
 import numpy as np
 import random
+import sys
+import gensim, logging
 
 SPECIAL_TOKENS = ['<PAD>', '<UNK>']
 SPECIAL_TAGS = ['<PAD>']
@@ -128,7 +130,7 @@ class Dataset:
 			#model.init_sims(replace=True) # maybe need this
 			emb_matrix = np.zeros((len(self.token_dict._i2t), emb_len))
 			for idx in range(len(self.token_dict._i2t)):
-				if model.get(self.token_dict._i2t[idx]) is not None:
+				if model[self.token_dict._i2t[idx]] is not None:
 					emb_matrix[idx] = model[self.token_dict._i2t[idx]]
 				else:
 					emb_matrix[idx] = np.random.randn(1, emb_len).astype(np.float32)

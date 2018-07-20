@@ -5,7 +5,7 @@ import json
 import os
 import layers
 
-from load_datasets import read_dataset, make_xy, write_to_file
+from load_datasets import read_dataset, make_xy, write_to_file, load_from_file
 
 devset_dir = "factRuEval-2016/devset"
 testset_dir = "factRuEval-2016/testset"
@@ -13,17 +13,20 @@ result_dir = "factRuEval-2016/results"
 
 def main():
 	dataset_dict = dict()
-	train_tokens = list(read_dataset(devset_dir, 'tokens'))
-	test_tokens = list(read_dataset(testset_dir, 'tokens'))
-	train_objects = list(read_dataset(devset_dir, 'objects'))
-	test_objects = list(read_dataset(testset_dir, 'objects'))
+	#train_tokens = list(read_dataset(devset_dir, 'tokens'))
+	#test_tokens = list(read_dataset(testset_dir, 'tokens'))
+	#train_objects = list(read_dataset(devset_dir, 'objects'))
+	#test_objects = list(read_dataset(testset_dir, 'objects'))
 
-	xy_list_train = make_xy(train_tokens, train_objects)
-	print(xy_list_train[:2])
-	xy_list_test = make_xy(test_tokens, test_objects)
+	#xy_list_train = make_xy(train_tokens, train_objects)
+	#print(xy_list_train[:2])
+	#xy_list_test = make_xy(test_tokens, test_objects)
 	
-	dataset_dict['train'] = xy_list_train[:1300]
-	dataset_dict['valid'] = xy_list_train[1300:]
+	xy_list_train = load_from_file('train.txt')
+	xy_list_valid = load_from_file('valid.txt')
+	xy_list_test = load_from_file('test.txt')
+	dataset_dict['train'] = xy_list_train
+	dataset_dict['valid'] = xy_list_valid
 	dataset_dict['test'] = xy_list_test
 
 	write_to_file('train', dataset_dict)
