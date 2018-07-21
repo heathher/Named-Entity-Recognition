@@ -29,9 +29,9 @@ def main():
 	dataset_dict['valid'] = xy_list_valid
 	dataset_dict['test'] = xy_list_test
 
-	write_to_file('train', dataset_dict)
-	write_to_file('valid', dataset_dict)
-	write_to_file('test', dataset_dict)
+	#write_to_file('train', dataset_dict)
+	#write_to_file('valid', dataset_dict)
+	#write_to_file('test', dataset_dict)
 	
 	for key in dataset_dict:
 		print('Number of samples (sentences) in {:<5}: {}'.format(key, len(dataset_dict[key])))
