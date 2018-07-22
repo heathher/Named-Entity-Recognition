@@ -44,7 +44,7 @@ def main():
 
 
 	learning_params = {'epochs': 100, 'dropout_rate': 0.5, 'learning_rate': 0.005, 'batch_size': 10, 
-						'momentum': 0.9, 'max_grad': 5.0}
+						'momentum': 0.9, 'max_grad': 5.0, 'char_max_len':30}
 	results = net.fit(**learning_params)
 
 if __name__=='__main__':
