@@ -125,14 +125,14 @@ class Dataset:
 		emb_len = 0
 		if embeddings_filepath.endswith('.vec.gz'):
 			model = gensim.models.KeyedVectors.load_word2vec_format(embeddings_filepath, binary=False)
-			emb_len = 300
+			emb_len = 600
 			self.emb_size = emb_len
 			#model.init_sims(replace=True) # maybe need this
 			emb_matrix = np.zeros((len(self.token_dict._i2t), emb_len)).astype(np.float32)
 			for idx in range(len(self.token_dict._i2t)):
-				print(self.token_dict._i2t[idx])
+				#print(self.token_dict._i2t[idx])
 				if self.token_dict._i2t[idx] in model.vocab:
-					print('check it')
+					#print('check it')
 					emb_matrix[idx] = model[self.token_dict._i2t[idx]]
 				else:
 					emb_matrix[idx] = np.random.randn(1, emb_len).astype(np.float32)

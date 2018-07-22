@@ -36,15 +36,15 @@ def main():
 	for key in dataset_dict:
 		print('Number of samples (sentences) in {:<5}: {}'.format(key, len(dataset_dict[key])))
 
-	corp = Dataset(dataset_dict, embeddings_filepath='rus_emb/ruwikiruscorpora-nobigrams_upos_skipgram_300_5_2018.vec.gz')
+	corp = Dataset(dataset_dict, embeddings_filepath='rus_emb/news_upos_cbow_600_2_2018.vec.gz')
 
 
-	model_params = {"filter_width": 6,"n_filters": [100, 100,], "token_embeddings_dim": 100, "char_embeddings_dim": 25, "use_crf": True, "embeddings_dropout": True}
+	model_params = {"filter_width": 6,"n_filters": [100, 100,], "token_embeddings_dim": 600, "char_embeddings_dim": 25, "use_crf": True, "embeddings_dropout": True}
 	net = Network(corp, **model_params)
 
+	learning_params = {'epochs': 150, 'dropout_rate': 0.5, 'learning_rate': 0.005, 'batch_size': 10, 
+						'momentum': 0.9, 'max_grad': 5.0}
 
-	learning_params = {'epochs': 100, 'dropout_rate': 0.5, 'learning_rate': 0.005, 'batch_size': 10, 
-						'momentum': 0.9, 'max_grad': 5.0, 'char_max_len':30}
 	results = net.fit(**learning_params)
 
 if __name__=='__main__':
