@@ -1,6 +1,7 @@
 import tensorflow as tf
 from tensorflow.contrib.layers import xavier_initializer
 import os
+import numpy as np
 
 from layers import character_embedding_network, embedding_layer, biLSTM
 from evaluation import precision_recall_f1
@@ -10,7 +11,7 @@ MODEL_FILE_NAME = 'ner_model.ckpt'
 
 class Network:
 	def __init__(self, corpus, n_filters=(128, 128), filter_width=3, token_embeddings_dim=100, char_embeddings_dim=30,
-				use_char_embeddins=True, embeddings_dropout=False, use_crf=False, char_filter_width=3, pretrained_model_path=None):
+				use_char_embeddins=True, embeddings_dropout=False, use_crf=False, char_filter_width=3, pretrained_model_path=None, char_max_len=30):
 
 		tf.reset_default_graph()
 
@@ -24,7 +25,7 @@ class Network:
 		if corpus.embeddings is not None:
 			x_emb = tf.placeholder(dtype=tf.float32, shape=[None, None, corpus.emb_size], name='x_word')
 		y_true = tf.placeholder(dtype=tf.int32, shape=[None, None], name='y_tag')
-		mask = tf.placeholder(dtype=tf.float32, shape=[None, None], name='mask')
+		mask = tf.placeholder(dtype=tf.int32, shape=[None, None], name='mask')
 		learning_rate_ph = tf.placeholder(dtype=tf.float32, shape=[], name='learning_rate')
 		dropout_ph = tf.placeholder_with_default(1.0, shape=[])
 		training_ph = tf.placeholder_with_default(False, shape=[])
@@ -36,28 +37,24 @@ class Network:
 		with tf.variable_scope('Embeddings'):
 			w_emb = embedding_layer(x_word, n_tokens=n_tokens, token_embedding_dim=token_embeddings_dim, token_embedding_matrix=corpus.emb_mat)
 			w_emb = tf.cast(w_emb, tf.float32)
-			#w_emb = tf.to_float(w_emb)
-			if use_char_embeddins:
-				c_emb = character_embedding_network(x_char, n_characters=n_chars, char_embedding_dim=char_embeddings_dim,
-													filter_width=char_filter_width)
-				emb = tf.concat([w_emb, c_emb], axis=-1)
-			else:
-				emb = w_emb
-		if corpus.embeddings is not None:
-			emb = tf.concat([emb, x_emb], axis=2)
+			c_emb = character_embedding_network(x_char, n_characters=n_chars, char_embedding_dim=char_embeddings_dim,
+												filter_width=char_filter_width)
+			emb = tf.concat([w_emb, c_emb], axis=-1)
+		# if corpus.embeddings is not None:
+		# 	emb = tf.concat([emb, x_emb], axis=2)
 		# Dropout for embeddings
-		if embeddings_dropout:
-			emb = tf.layers.dropout(emb, dropout_ph, training=training_ph)
+		emb = tf.layers.dropout(emb, dropout_ph, training=training_ph)
 		# Make bi-LSTM
-		units = biLSTM(emb, n_filters)
-
-		#units = tf.layers.dropout(units, dropout_ph, training=training_ph)
+		sequence_lengths = tf.reduce_sum(mask, axis=1)
+		units = biLSTM(emb, n_filters, sequence_lengths)
+		# Dropout
+		units = tf.layers.dropout(units, dropout_ph, training=training_ph)
 
 		# Classifier
 		with tf.variable_scope('Classifier'):
 			logits = tf.layers.dense(units, n_tags, kernel_initializer=xavier_initializer())
 		if use_crf:
-			sequence_lengths = tf.reduce_sum(mask, axis=1)
+			
 			log_likelihood, trainsition_params = tf.contrib.crf.crf_log_likelihood(logits, y_true, sequence_lengths)
 			loss_tensor = -log_likelihood
 			predictions = None

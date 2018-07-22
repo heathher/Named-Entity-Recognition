@@ -128,7 +128,7 @@ class Dataset:
 			emb_len = 300
 			self.emb_size = emb_len
 			#model.init_sims(replace=True) # maybe need this
-			emb_matrix = np.zeros((len(self.token_dict._i2t), emb_len))
+			emb_matrix = np.zeros((len(self.token_dict._i2t), emb_len)).astype(np.float32)
 			for idx in range(len(self.token_dict._i2t)):
 				print(self.token_dict._i2t[idx])
 				if self.token_dict._i2t[idx] in model.vocab:
