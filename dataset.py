@@ -28,9 +28,11 @@ class Dataset:
 			print("Load dataset")
 	
 	def get_tokens(self, data_type='train'):
-		for tokens, _ in self.dataset[data_type]:
-			for token in tokens:
-				yield token
+		data_types = self.dataset.keys()
+		for data_type in data_types:
+			for tokens, _ in self.dataset[data_type]:
+				for token in tokens:
+					yield token
 
 	def get_tags(self, data_type=None):
 		if data_type is None:
@@ -43,10 +45,12 @@ class Dataset:
 					yield tag
 
 	def get_characters(self, data_type='train'):
-		for tokens, _ in self.dataset[data_type]:
-			for token in tokens:
-				for character in token:
-					yield character
+		data_types = self.dataset.keys()
+		for data_type in data_types:
+			for tokens, _ in self.dataset[data_type]:
+				for token in tokens:
+					for character in token:
+						yield character
 
 
 	def batch_generator(self, batch_size, dataset_type='train', shuffle=True,
@@ -78,8 +82,8 @@ class Dataset:
 		# Max token length
 		max_token_len = max([len(token) for utt in batch_x for token in utt])
 
-		if self.embeddings is not None:
-			x['emb'] = np.zeros([batch_size, max_utt_len, self.emb_size], dtype=np.float32)
+		# if self.embeddings is not None:
+		# 	x['emb'] = np.zeros([batch_size, max_utt_len, self.emb_size], dtype=np.float32)
 
 		x['token'] = np.ones([batch_size, max_utt_len], dtype=np.int32) * self.token_dict['<PAD>']
 		x['char'] = np.ones([batch_size, max_utt_len, max_token_len], dtype=np.int32) * self.char_dict['<PAD>']
@@ -93,14 +97,14 @@ class Dataset:
 
 		# Prepare x batch
 		for n, utterance in enumerate(batch_x):
-			if self.embeddings is not None:
-				utterance_vectors = np.zeros([len(utterance), self.emb_size])
-				for q, token in enumerate(utterance):
-					try:
-						utterance_vectors[q] = self.embeddings[token.lower()]
-					except KeyError:
-						pass
-				x['emb'][n, :len(utterance), :] = utterance_vectors
+			# if self.embeddings is not None:
+			# 	utterance_vectors = np.zeros([len(utterance), self.emb_size])
+			# 	for q, token in enumerate(utterance):
+			# 		try:
+			# 			utterance_vectors[q] = self.embeddings[token.lower()]
+			# 		except KeyError:
+			# 			pass
+			# 	x['emb'][n, :len(utterance), :] = utterance_vectors
 			x['token'][n, :len(utterance)] = self.token_dict.toks2idxs(utterance)
 			for k, token in enumerate(utterance):
 				x['char'][n, k, :len(token)] = self.char_dict.toks2idxs(token)

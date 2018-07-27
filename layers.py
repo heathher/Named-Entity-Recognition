@@ -17,15 +17,17 @@ def embedding_layer(input_placeholder, n_tokens, token_embedding_dim, token_embe
 		tok_mat = token_embedding_matrix
 	else:
 		tok_mat = np.random.randn(n_tokens, token_embedding_dim).astype(np.float32) / np.sqrt(token_embedding_dim)
-	tok_emb_mat = tf.Variable(tok_mat)
+	tok_emb_mat = tf.Variable(tok_mat, trainable=True)
 	embeddings = tf.nn.embedding_lookup(tok_emb_mat, input_placeholder)
 	return embeddings
 
-def character_embedding_network(char_placeholder, n_characters, char_embedding_dim, filter_width=3):
+def character_embedding_network(char_placeholder, n_characters, char_embedding_dim, filter_width=3, dropout_ph=None):
 	char_emb_mat = np.random.randn(n_characters, char_embedding_dim).astype(np.float32) / np.sqrt(char_embedding_dim)
-	char_emb_var = tf.Variable(char_emb_mat)
+	char_emb_var = tf.Variable(char_emb_mat, trainable=True)
 	with tf.variable_scope('CharEmbNetwork'):
 		c_emb = tf.nn.embedding_lookup(char_emb_var, char_placeholder)
+		# if dropout_ph is not None:
+		# 	c_emb = tf.layers.dropout(c_emb, dropout_ph, training=True)
 		reduced_length = c_emb.get_shape()[2] - filter_width + 1
 		#print(reduced_length)
 		char_conv = tf.layers.conv2d(c_emb, char_embedding_dim, (1, filter_width), padding='VALID', name='char_conv')
