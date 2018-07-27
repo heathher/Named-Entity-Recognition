@@ -26,8 +26,6 @@ def character_embedding_network(char_placeholder, n_characters, char_embedding_d
 	char_emb_var = tf.Variable(char_emb_mat, trainable=True)
 	with tf.variable_scope('CharEmbNetwork'):
 		c_emb = tf.nn.embedding_lookup(char_emb_var, char_placeholder)
-		#if dropout_ph is not None:
-		#	c_emb = tf.layers.dropout(c_emb, dropout_ph, training=True)
 		reduced_length = c_emb.get_shape()[2] - filter_width + 1
 		#print(reduced_length)
 		char_conv = tf.layers.conv2d(c_emb, char_embedding_dim, (1, filter_width), padding='VALID', name='char_conv')

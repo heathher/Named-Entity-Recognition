@@ -20,10 +20,10 @@ class Network:
 		n_chars = len(corpus.char_dict)
 
 		# Create placeholders
+		# if corpus.embeddings is not None:
+		# 	x_emb = tf.placeholder(dtype=tf.int32, shape=[None, None, corpus.emb_size], name='x_emb')
 		x_word = tf.placeholder(dtype=tf.int32, shape=[None, None], name='x_word')
 		x_char = tf.placeholder(dtype=tf.int32, shape=[None, None, None], name='x_char')
-		if corpus.embeddings is not None:
-			x_emb = tf.placeholder(dtype=tf.float32, shape=[None, None, corpus.emb_size], name='x_emb')
 		y_true = tf.placeholder(dtype=tf.int32, shape=[None, None], name='y_tag')
 		mask = tf.placeholder(dtype=tf.int32, shape=[None, None], name='mask')
 		learning_rate_ph = tf.placeholder(dtype=tf.float32, shape=[], name='learning_rate')
@@ -72,8 +72,8 @@ class Network:
 		self._learning_rate_decay_ph = learning_rate_decay_ph
 		self._x_w = x_word
 		self._x_c = x_char
-		if corpus.embeddings is not None:
-			self._x_emb = x_emb
+		# if corpus.embeddings is not None:
+		# 	self._x_emb = x_emb
 		self._y_true = y_true
 		self._y_pred = predictions
 		self._learning_rate_ph = learning_rate_ph
@@ -157,7 +157,10 @@ class Network:
 				y_true_list.append('O')
 				y_pred_list.append('O')
 			for tok, y_t, y_p in zip(token, y_gt, y_pred):
-				for idx in range(len(tok)):
+				if len(tok) != len(y_p):
+					print(tok)
+					print(y_p)
+				for idx in range(len(y_p)):
 					file.write("%s ? %s %s\n" %(tok[idx], y_t[idx], y_p[idx]))
 				file.write('\n')
 		file.close()
@@ -171,8 +174,8 @@ class Network:
 		feed_dict[self._x_w] = x['token']
 		feed_dict[self._x_c] = x['char']
 		feed_dict[self._mask] = x['mask']
-		if self.corpus.embeddings is not None:
-			feed_dict[self._x_emb] = x['emb']
+		# if self.corpus.embeddings is not None:
+		# 	feed_dict[self._x_emb] = x['emb']
 		feed_dict[self._training_ph] = training
 		feed_dict[self._max_grad] = max_grad
 		if y_t is not None:
