@@ -39,7 +39,7 @@ def main():
 					"pretrained_model_path": pretrained_model_path}
 	net = Network(corp, **model_params)
 
-	learning_params = {'epochs': 1, 'dropout_rate': 0.5, 'learning_rate': 0.015, 'batch_size': 10, 'learning_rate_decay': 0.05, 
+	learning_params = {'epochs': 10, 'dropout_rate': 0.5, 'learning_rate': 0.015, 'batch_size': 10, 'learning_rate_decay': 0.05, 
 						'momentum': 0.9, 'max_grad': 5.0}
 	results = net.fit(**learning_params)
 

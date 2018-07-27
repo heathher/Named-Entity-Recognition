@@ -23,7 +23,7 @@ class Network:
 		x_word = tf.placeholder(dtype=tf.int32, shape=[None, None], name='x_word')
 		x_char = tf.placeholder(dtype=tf.int32, shape=[None, None, None], name='x_char')
 		if corpus.embeddings is not None:
-			x_emb = tf.placeholder(dtype=tf.float32, shape=[None, None, corpus.emb_size], name='x_word')
+			x_emb = tf.placeholder(dtype=tf.float32, shape=[None, None, corpus.emb_size], name='x_emb')
 		y_true = tf.placeholder(dtype=tf.int32, shape=[None, None], name='y_tag')
 		mask = tf.placeholder(dtype=tf.int32, shape=[None, None], name='mask')
 		learning_rate_ph = tf.placeholder(dtype=tf.float32, shape=[], name='learning_rate')
@@ -38,7 +38,7 @@ class Network:
 			w_emb = embedding_layer(x_word, n_tokens=n_tokens, token_embedding_dim=token_embeddings_dim, token_embedding_matrix=corpus.emb_mat)
 			w_emb = tf.cast(w_emb, tf.float32)
 			c_emb = character_embedding_network(x_char, n_characters=n_chars, char_embedding_dim=char_embeddings_dim,
-												filter_width=char_filter_width)
+												filter_width=char_filter_width, dropout_ph=dropout_ph)
 			emb = tf.concat([w_emb, c_emb], axis=-1)
 		# if corpus.embeddings is not None:
 		# 	emb = tf.concat([emb, x_emb], axis=2)
@@ -166,9 +166,8 @@ class Network:
 	def fill_feed_dict(self, x, y_t=None, learning_rate=None, training=False, dropout_rate=1.0, learning_rate_decay=1.0, 
 						momentum=0.9, max_grad=5.0):
 		feed_dict = dict()
-		# if self.corpus.embeddings is not None:
-		# 	feed_dict[self._x_w] = x['emb']
-		# else:
+		if self.corpus.embeddings is not None:
+			feed_dict[self._x_emb] = x['emb']
 		feed_dict[self._x_w] = x['token']
 		feed_dict[self._x_c] = x['char']
 		feed_dict[self._mask] = x['mask']
