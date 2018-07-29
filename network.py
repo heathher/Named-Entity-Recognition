@@ -20,8 +20,6 @@ class Network:
 		n_chars = len(corpus.char_dict)
 
 		# Create placeholders
-		# if corpus.embeddings is not None:
-		# 	x_emb = tf.placeholder(dtype=tf.int32, shape=[None, None, corpus.emb_size], name='x_emb')
 		x_word = tf.placeholder(dtype=tf.int32, shape=[None, None], name='x_word')
 		x_char = tf.placeholder(dtype=tf.int32, shape=[None, None, None], name='x_char')
 		y_true = tf.placeholder(dtype=tf.int32, shape=[None, None], name='y_tag')
@@ -40,8 +38,6 @@ class Network:
 			c_emb = character_embedding_network(x_char, n_characters=n_chars, char_embedding_dim=char_embeddings_dim,
 												filter_width=char_filter_width, dropout_ph=dropout_ph)
 			emb = tf.concat([w_emb, c_emb], axis=-1)
-		# if corpus.embeddings is not None:
-		# 	emb = tf.concat([emb, x_emb], axis=2)
 		# Dropout for embeddings
 		emb = tf.layers.dropout(emb, dropout_ph, training=training_ph)
 		# Make bi-LSTM
@@ -72,8 +68,6 @@ class Network:
 		self._learning_rate_decay_ph = learning_rate_decay_ph
 		self._x_w = x_word
 		self._x_c = x_char
-		# if corpus.embeddings is not None:
-		# 	self._x_emb = x_emb
 		self._y_true = y_true
 		self._y_pred = predictions
 		self._learning_rate_ph = learning_rate_ph
@@ -172,8 +166,6 @@ class Network:
 		feed_dict[self._x_w] = x['token']
 		feed_dict[self._x_c] = x['char']
 		feed_dict[self._mask] = x['mask']
-		# if self.corpus.embeddings is not None:
-		# 	feed_dict[self._x_emb] = x['emb']
 		feed_dict[self._training_ph] = training
 		feed_dict[self._max_grad] = max_grad
 		if y_t is not None:
