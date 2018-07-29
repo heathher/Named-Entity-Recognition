@@ -169,8 +169,6 @@ class Network:
 	def fill_feed_dict(self, x, y_t=None, learning_rate=None, training=False, dropout_rate=1.0, learning_rate_decay=1.0, 
 						momentum=0.9, max_grad=5.0):
 		feed_dict = dict()
-		if self.corpus.embeddings is not None:
-			feed_dict[self._x_emb] = x['emb']
 		feed_dict[self._x_w] = x['token']
 		feed_dict[self._x_c] = x['char']
 		feed_dict[self._mask] = x['mask']
