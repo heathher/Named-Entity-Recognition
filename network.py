@@ -109,7 +109,7 @@ class Network:
 		#variables = tf.trainable_variables()
 		extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 		with tf.control_dependencies(extra_update_ops):
-			#train_op = tf.train.AdamOptimizer(learning_rate).minimize(loss, global_step=global_step, var_list=variables)
+			#train_op = tf.train.AdamOptimizer(learning_rate)#.minimize(loss, global_step=global_step, var_list=variables)
 			train_op = tf.train.MomentumOptimizer(learning_rate, momentum)
 			#for var in tf.all_variables():
 			#	print('>', var.name, var.dtype, var.shape)
@@ -129,6 +129,7 @@ class Network:
 				#summary, _ = self._sess.run([self.summary, self._train_op], feed_dict=feed_dict)
 				#self.filewriter.add_summary(summary)
 				self._sess.run(self._train_op, feed_dict=feed_dict)
+			self.eval_conll('train', print_results=True)
 			self.eval_conll('valid', print_results=True)
 			self.save()
 		self.eval_conll(dataset_type='train', short_report=False)

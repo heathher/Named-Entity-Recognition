@@ -54,7 +54,7 @@ def read_dataset(dir_path, filetype):
 								counter += 1
 							ind_begin = counter+3
 							while counter > 0:
-								tokens = re.findall(r"[\w']+|[.,!?;]", items[ind_begin])
+								tokens = re.findall(r"[\w']+|[,!?;]", items[ind_begin])
 								entity.extend(tokens)
 								counter -= 1
 								ind_begin += 1
