@@ -7,6 +7,7 @@ import layers
 
 from load_datasets import read_dataset, make_xy, write_to_file, load_from_file
 from sklearn.utils import shuffle
+from sklearn.model_selection import train_test_split
 
 devset_dir = "factRuEval-2016/devset"
 testset_dir = "factRuEval-2016/testset"
@@ -26,8 +27,9 @@ def main():
 	xy_list_train = load_from_file('trainudpipe.txt')
 	xy_list_test = load_from_file('testudpipe.txt')
 	
-	dataset_dict['train'] = xy_list_train[:800]
-	dataset_dict['valid'] = xy_list_train[800:]
+	xy_list_train, xy_list_valid = train_test_split(xy_list_train, train_size = 0.5, random_state=42)
+	dataset_dict['train'] = xy_list_train
+	dataset_dict['valid'] = xy_list_valid
 	dataset_dict['test'] = xy_list_test
 
 	# write_to_file('train', dataset_dict)
@@ -48,7 +50,7 @@ def main():
 					"embeddings_dropout": True, "pretrained_model_path": None}
 	net = Network(corp, **model_params)
 
-	learning_params = {'epochs': 100, 'dropout_rate': 0.3, 'learning_rate': 0.005, 'batch_size': 10, 
+	learning_params = {'epochs': 100, 'dropout_rate': 0.3, 'learning_rate': 0.0015, 'batch_size': 10, 
 						'momentum': 0.9, 'max_grad': 1.0}
 
 	results = net.fit(**learning_params)
