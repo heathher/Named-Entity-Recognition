@@ -2,7 +2,7 @@ import tensorflow as tf
 from tensorflow.contrib.layers import xavier_initializer
 import os
 import numpy as np
-
+from time import time
 from layers import character_embedding_network, embedding_layer, biLSTM
 from evaluation import precision_recall_f1
 
@@ -122,6 +122,7 @@ class Network:
 			momentum=0.9, max_grad=5.0):
 		for epoch in range(epochs):
 			print('Epoch {}'.format(epoch))
+			start_time = time()
 			batch_generator = self.corpus.batch_generator(batch_size, dataset_type='train')
 			for x, y, token in batch_generator:
 				feed_dict = self.fill_feed_dict(x, y, learning_rate, dropout_rate=dropout_rate, training=True,
@@ -129,22 +130,39 @@ class Network:
 				#summary, _ = self._sess.run([self.summary, self._train_op], feed_dict=feed_dict)
 				#self.filewriter.add_summary(summary)
 				self._sess.run(self._train_op, feed_dict=feed_dict)
-			self.eval_conll('train', print_results=True)
-			self.eval_conll('valid', print_results=True)
+			print("Time: ", time()-start_time)
+			self.eval_conll('train', print_results=True, learning_rate=learning_rate, dropout_rate=dropout_rate,
+												 learning_rate_decay=learning_rate_decay, momentum = momentum, max_grad=max_grad)
+			self.eval_conll('valid', print_results=True, learning_rate=learning_rate, dropout_rate=dropout_rate,
+												 learning_rate_decay=learning_rate_decay, momentum = momentum, max_grad=max_grad)
 			self.save()
-		self.eval_conll(dataset_type='train', short_report=False)
-		self.eval_conll(dataset_type='valid', short_report=False)
+		self.eval_conll(dataset_type='train', short_report=False, learning_rate=learning_rate, dropout_rate=dropout_rate,
+												 learning_rate_decay=learning_rate_decay, momentum = momentum, max_grad=max_grad)
+		self.eval_conll(dataset_type='valid', short_report=False, learning_rate=learning_rate, dropout_rate=dropout_rate,
+												 learning_rate_decay=learning_rate_decay, momentum = momentum, max_grad=max_grad)
 		results = self.eval_conll(dataset_type='test', short_report=False)
 		return results
 
-	def eval_conll(self, dataset_type='test', print_results=True, short_report=True):
+	def eval_conll(self, dataset_type='test', print_results=True, short_report=True, learning_rate=1e-3, dropout_rate=0.5,
+												 learning_rate_decay=1, momentum = 0.9, max_grad=5.0):
 		y_true_list = list()
 		y_pred_list = list()
+		global_loss = 0
 		file = open('result'+dataset_type+'.txt', 'w')
 		print('Eval on {}:'.format(dataset_type))
 		for x, y_gt, token in self.corpus.batch_generator(batch_size=10, dataset_type=dataset_type):
-			y_pred = self.predict(x)
+			y_pred, logits = self.predict(x)
+			feed_dict = self.fill_feed_dict(x, y_gt, learning_rate, dropout_rate=dropout_rate, training=True,
+												 learning_rate_decay=learning_rate_decay, momentum = momentum, max_grad=max_grad)
+			ground_truth_labels = tf.one_hot(y_gt, len(self.corpus.tag_dict))
+			loss_tensor = tf.nn.softmax_cross_entropy_with_logits(labels=ground_truth_labels, logits=logits)
+			mask =  tf.cast(self._mask, tf.float32)
+			loss_tensor = loss_tensor * mask
+			loss = tf.reduce_mean(loss_tensor)
+			global_loss += self._sess.run(loss, feed_dict=feed_dict)
+
 			y_gt = self.corpus.tag_dict.batch_idxs2batch_toks(y_gt, filter_paddings=True)
+			predictions = tf.argmax(logits, axis=-1)
 			for tags_pred, tags_gt in zip(y_pred, y_gt):
 				for tag_predicted, tag_ground_truth in zip(tags_pred, tags_gt):
 					y_true_list.append(tag_ground_truth)
@@ -159,6 +177,8 @@ class Network:
 					file.write("%s ? %s %s\n" %(tok[idx], y_t[idx], y_p[idx]))
 				file.write('\n')
 		file.close()
+		global_loss /= len(self.corpus.dataset[dataset_type])/10
+		print("LOSS: ", global_loss)
 		return precision_recall_f1(y_true_list, y_pred_list, print_results, short_report)
 
 	def fill_feed_dict(self, x, y_t=None, learning_rate=None, training=False, dropout_rate=1.0, learning_rate_decay=1.0, 
@@ -192,8 +212,8 @@ class Network:
 				viterbi_seq, viterbi_score = tf.contrib.crf.viterbi_decode(logit, trans_params)
 				y_pred += [viterbi_seq]
 		else:
-			y_pred = self._sess.run(self._y_pred, feed_dict=feed_dict)
-		return self.corpus.tag_dict.batch_idxs2batch_toks(y_pred, filter_paddings=True)
+			logits, y_pred = self._sess.run(self._logits, self._y_pred, feed_dict=feed_dict)
+		return self.corpus.tag_dict.batch_idxs2batch_toks(y_pred, filter_paddings=True), logits
 
 	def load(self, model_file_path):
 		saver = tf.train.Saver()
