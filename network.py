@@ -2,7 +2,7 @@ import tensorflow as tf
 from tensorflow.contrib.layers import xavier_initializer
 import os
 import numpy as np
-
+from time import time
 from layers import character_embedding_network, embedding_layer, biLSTM
 from evaluation import precision_recall_f1
 
@@ -122,6 +122,7 @@ class Network:
 			momentum=0.9, max_grad=5.0):
 		for epoch in range(epochs):
 			print('Epoch {}'.format(epoch))
+			start_time = time()
 			batch_generator = self.corpus.batch_generator(batch_size, dataset_type='train')
 			for x, y, token in batch_generator:
 				feed_dict = self.fill_feed_dict(x, y, learning_rate, dropout_rate=dropout_rate, training=True,
@@ -129,6 +130,7 @@ class Network:
 				#summary, _ = self._sess.run([self.summary, self._train_op], feed_dict=feed_dict)
 				#self.filewriter.add_summary(summary)
 				self._sess.run(self._train_op, feed_dict=feed_dict)
+			print("Time: ", time()-start_time)
 			self.eval_conll('train', print_results=True)
 			self.eval_conll('valid', print_results=True)
 			self.save()
