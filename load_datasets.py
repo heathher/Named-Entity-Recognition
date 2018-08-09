@@ -122,7 +122,7 @@ def make_xy(tokens, objects):
 	return xy_list
 
 def write_to_file(dataset_type, dataset):
-	file = open(dataset_type+'.txt', 'w')
+	file = open(dataset_type+'udpipe.txt', 'w')
 	for token, tag in dataset[dataset_type]:
 		for idx in range(len(token)):
 			file.write("%s %s\n" %(token[idx], tag[idx]))

@@ -109,8 +109,9 @@ class Network:
 		#variables = tf.trainable_variables()
 		extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 		with tf.control_dependencies(extra_update_ops):
-			#train_op = tf.train.AdamOptimizer(learning_rate)#.minimize(loss, global_step=global_step, var_list=variables)
-			train_op = tf.train.MomentumOptimizer(learning_rate, momentum)
+			train_op = tf.train.AdamOptimizer(learning_rate)#.minimize(loss, global_step=global_step, var_list=variables)
+			#train_op = tf.train.MomentumOptimizer(learning_rate, momentum)
+			#train_op = tf.contrib.opt.NadamOptimizer(learning_rate)
 			#for var in tf.all_variables():
 			#	print('>', var.name, var.dtype, var.shape)
 			gradients, variables = zip(*train_op.compute_gradients(loss))
@@ -124,13 +125,17 @@ class Network:
 			print('Epoch {}'.format(epoch))
 			start_time = time()
 			batch_generator = self.corpus.batch_generator(batch_size, dataset_type='train')
+			global_loss = 0.0
 			for x, y, token in batch_generator:
 				feed_dict = self.fill_feed_dict(x, y, learning_rate, dropout_rate=dropout_rate, training=True,
 												 learning_rate_decay=learning_rate_decay, momentum = momentum, max_grad=max_grad)
 				#summary, _ = self._sess.run([self.summary, self._train_op], feed_dict=feed_dict)
 				#self.filewriter.add_summary(summary)
-				self._sess.run(self._train_op, feed_dict=feed_dict)
+				loss, _ = self._sess.run([self._loss, self._train_op], feed_dict=feed_dict)
+				global_loss += loss
 			print("Time: ", time()-start_time)
+			global_loss /= len(self.corpus.dataset['train'])/batch_size
+			print("Loss: %f" %(global_loss))
 			self.eval_conll('train', print_results=True)
 			self.eval_conll('valid', print_results=True)
 			self.save()
