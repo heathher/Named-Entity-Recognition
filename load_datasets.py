@@ -121,13 +121,14 @@ def make_xy(tokens, objects):
 	print("Time: ", t2-t1)
 	return xy_list
 
-def write_to_file(dataset_type, dataset):
-	file = open(dataset_type+'udpipe.txt', 'w')
+def write_to_file(dataset_type, dataset, i):
+	file = open(dataset_type+str(i)+'udpipe.txt', 'w')
 	for token, tag in dataset[dataset_type]:
 		for idx in range(len(token)):
 			file.write("%s %s\n" %(token[idx], tag[idx]))
 		file.write('\n')
 	file.close()
+
 
 def load_from_file(filename):
 	f = open(filename, 'r')
@@ -144,7 +145,7 @@ def load_from_file(filename):
 				tokens.append(token)
 			tags.append(tag)
 		elif len(tokens) > 0:
-			xy_list.append((tokens, tags,))
+			xy_list.append((tokens, tags))
 			tokens = list()
 			tags = list()
 	return xy_list
