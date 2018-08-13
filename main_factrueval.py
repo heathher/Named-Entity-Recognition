@@ -19,19 +19,19 @@ def main():
 		xy_list_test = load_from_file('testudpipe.txt')
 		dataset_dict['test'] = xy_list_test
 			
-		for i in range(3):
-			xy_list_train = load_from_file('trainudpipe.txt')
-			xy_list_train.extend(load_from_file('validudpipe.txt'))
-			xy_list_train, xy_list_valid = train_test_split(xy_list_train, train_size = 0.5, random_state=42+i)
-			dataset_dict['train'] = xy_list_train
-			dataset_dict['valid'] = xy_list_valid
-			write_to_file('train', dataset_dict, i)
-			write_to_file('valid', dataset_dict, i)
+		#for i in range(3):
+		#	xy_list_train = load_from_file('trainudpipe.txt')
+		#	xy_list_train.extend(load_from_file('validudpipe.txt'))
+		#	xy_list_train, xy_list_valid = train_test_split(xy_list_train, train_size = 0.5, random_state=42+i)
+		#	dataset_dict['train'] = xy_list_train
+		#	dataset_dict['valid'] = xy_list_valid
+		#	write_to_file('train', dataset_dict, i)
+		#	write_to_file('valid', dataset_dict, i)
 		with open(sys.argv[1]) as f:
 				params = json.load(f)
 
-		# dataset_dict['train']=load_from_file(params['train_file'])
-		# dataset_dict['valid']=load_from_file(params['valid_file'])
+		dataset_dict['train']=load_from_file(params['train_file'])
+		dataset_dict['valid']=load_from_file(params['valid_file'])
 		for key in dataset_dict:
 				print('Number of samples (sentences) in {:<5}: {}'.format(key, len(dataset_dict[key])))
 

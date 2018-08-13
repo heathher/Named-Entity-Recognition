@@ -3,9 +3,9 @@
   "valid_file": "valid0udpipe.txt",
   "model_params": {
     "filter_width": 6,
-    "n_filters": [200, 200],
+    "n_filters": [200],
     "token_embeddings_dim": 600,
-    "char_embeddings_dim": 50,
+    "char_embeddings_dim": 100,
     "use_crf": true,
     "embeddings_dropout": true,
     "pretrained_model_path": null
@@ -13,7 +13,7 @@
   "learning_params": {
     "epochs": 200,
     "dropout_rate": 0.5,
-    "learning_rate": 0.0001,
+    "learning_rate": 0.0005,
     "batch_size": 6,
     "momentum": 0.9,
     "max_grad": 1.0}

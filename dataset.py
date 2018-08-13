@@ -154,8 +154,9 @@ class Dataset:
 			self.emb_size = emb_len
 			emb_matrix = np.zeros((len(self.token_dict._i2t), emb_len)).astype(np.float32)
 			for idx in range(len(self.token_dict._i2t)):
-				if model.get(self.token_dict._i2t[idx]) is not None:
-					emb_matrix[idx] = model[self.token_dict._i2t[idx]]
+				token = self.token_dict._i2t[idx].lower()
+				if model.get(token) is not None:
+					emb_matrix[idx] = model[token]
 				else:
 					emb_matrix[idx] = np.random.randn(1, emb_len).astype(np.float32)
 			print("Embeddings matrix shape: ", emb_matrix.shape)
